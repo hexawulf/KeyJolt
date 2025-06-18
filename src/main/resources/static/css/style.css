@@ -696,22 +696,21 @@ select:focus {
 
 /* General Modal Styling */
 .modal {
-  display: none; /* Hidden by default */
-  position: fixed; /* Stay in place */
-  z-index: 1000; /* Sit on top */
-  left: 0;
-  top: 0;
-  width: 100%; /* Full width */
-  height: 100%; /* Full height */
-  overflow: auto; /* Enable scroll if needed */
-  background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
-  align-items: center; /* For centering content if using flex */
-  justify-content: center; /* For centering content if using flex */
-  /* animation: fadeIn 0.3s ease-out; /* Simple fade-in - consider if needed with JS toggle */
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.6);
+    align-items: center;
+    justify-content: center;
 }
 
-.modal-open {
-  display: flex; /* Or 'block', depending on how centering is handled */
+.modal.modal-open {
+    display: flex !important;
 }
 
 .modal-content {
