@@ -693,3 +693,215 @@ select:focus {
     outline: none;
     box-shadow: 0 0 0 3px var(--twitter-blue-light);
 }
+
+/* General Modal Styling */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1000; /* Sit on top */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+  align-items: center; /* For centering content if using flex */
+  justify-content: center; /* For centering content if using flex */
+  /* animation: fadeIn 0.3s ease-out; /* Simple fade-in - consider if needed with JS toggle */
+}
+
+.modal-open {
+  display: flex; /* Or 'block', depending on how centering is handled */
+}
+
+.modal-content {
+  background-color: #fefefe; /* var(--white) might be better for consistency */
+  margin: auto; /* Handles centering for block display, works with flex too */
+  padding: 20px;
+  border: 1px solid #888; /* var(--gray-300) might be better */
+  width: 80%;
+  max-width: 600px; /* Max width for larger screens */
+  border-radius: 8px; /* var(--radius-md) or var(--radius-lg) */
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19); /* Consider var(--shadow-lg) or var(--shadow-xl) */
+  position: relative; /* For positioning the close button */
+}
+
+/* Close Button Styling (for new modals) */
+.close-button {
+  color: #aaa; /* var(--gray-500) */
+  float: right; /* Avoid float if using flex for header */
+  font-size: 28px;
+  font-weight: bold;
+  position: absolute; /* Position relative to modal-content */
+  top: 10px;
+  right: 20px;
+}
+
+.close-button:hover,
+.close-button:focus {
+  color: black; /* var(--gray-900) */
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Modal Header Styling (general for h2 in new modals) */
+.modal-content h2 {
+  margin-top: 0;
+  font-size: 1.5em; /* Example size, adjust as needed */
+}
+
+.modal-icon {
+  margin-right: 10px; /* Space between icon and title */
+}
+
+/* Modal Paragraph and List Styling (for new modals) */
+.modal-content p,
+.modal-content ul {
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.modal-content ul {
+  padding-left: 20px;
+}
+
+.modal-content li {
+  margin-bottom: 8px;
+}
+
+/* Specific About Modal Styles (ensure these are preserved or adapted) */
+/* The existing .modal and .modal-content are now generalized. */
+/* .modal-header, .modal-close, .modal-body, .about-section specific styles below */
+/* should continue to work for the About modal. */
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--gray-200);
+    margin-bottom: 24px;
+}
+
+.modal-header h2 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    transition: background-color 0.2s ease;
+}
+
+.modal-close:hover {
+    background-color: var(--gray-100);
+}
+
+.modal-close i {
+    width: 24px;
+    height: 24px;
+    color: var(--gray-600);
+    display: block; /* Ensures proper alignment */
+}
+
+.modal-body {
+    font-size: 1rem;
+    color: var(--gray-700);
+}
+
+.about-section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px dashed var(--gray-200);
+}
+
+.about-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.about-section h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--twitter-blue);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.about-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--twitter-blue);
+}
+
+.about-section p {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+.about-section a {
+    color: var(--twitter-blue);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.about-section a:hover {
+    text-decoration: underline;
+    color: var(--twitter-blue-dark);
+}
+
+/* Responsive adjustments for modal */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        padding: 24px;
+    }
+    .modal-header h2 {
+        font-size: 1.5rem;
+    }
+    .modal-body {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-header {
+        padding-bottom: 12px;
+        margin-bottom: 16px;
+    }
+    .modal-header h2 {
+        font-size: 1.3rem;
+    }
+    .about-section h3 {
+        font-size: 1rem;
+    }
+    .about-icon {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+/* Responsive adjustments for general modals */
+@media screen and (max-width: 768px) {
+  .modal-content { /* This will also affect About Modal if it uses .modal-content */
+    width: 90%;
+    padding: 15px;
+  }
+  .modal-content h2 { /* This could affect About Modal's h2 if not overridden by .modal-header h2 */
+    font-size: 1.3em;
+  }
+  .close-button { /* Specific to new modals' close buttons */
+    font-size: 24px;
+    top: 5px;
+    right: 15px;
+  }
+}

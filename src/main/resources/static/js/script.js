@@ -9,10 +9,18 @@ class KeyJoltApp {
         this.successMessage = document.getElementById('successMessage');
         this.errorMessage = document.getElementById('errorMessage');
 
-        // About Modal elements
+        // Modal elements
         this.aboutModal = document.getElementById('aboutModal');
+        this.securityModal = document.getElementById('security-modal');
+        this.privacyModal = document.getElementById('privacy-modal');
+
         this.aboutLink = document.querySelector('a[href="#about"]');
-        this.closeAboutModalBtn = document.getElementById('closeAboutModal');
+        this.securityLink = document.querySelector('a[href="#security"]');
+        this.privacyLink = document.querySelector('a[href="#privacy"]');
+
+        this.closeAboutModalBtn = this.aboutModal ? this.aboutModal.querySelector('.modal-close') : null; // Existing about modal close
+        this.securityModalCloseBtn = this.securityModal ? this.securityModal.querySelector('.close-button') : null;
+        this.privacyModalCloseBtn = this.privacyModal ? this.privacyModal.querySelector('.close-button') : null;
         
         this.validationTimeouts = {};
         this.isGenerating = false;
@@ -35,8 +43,38 @@ class KeyJoltApp {
         // Setup form validation
         this.setupValidation();
 
-        // Setup About Modal
-        this.initAboutModal();
+        // Setup Modals
+        this.initModals();
+    }
+
+    // Generic Modal Handling
+    openModal(modalElement) {
+        if (!modalElement) return;
+        // Close any other open modals first
+        document.querySelectorAll('.modal.modal-open').forEach(m => {
+            if (m !== modalElement) { // Don't remove from the one we are opening
+                m.classList.remove('modal-open');
+            }
+        });
+        modalElement.classList.add('modal-open');
+
+        // Focus management
+        const focusable = modalElement.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusable) {
+            focusable.focus();
+        } else {
+            modalElement.setAttribute('tabindex', '-1'); // Make modal focusable if no children are
+            modalElement.focus();
+        }
+    }
+
+    closeModal(modalElement) {
+        if (!modalElement) return;
+        const triggerLink = modalElement.triggerLink; // Assumes we store this
+        modalElement.classList.remove('modal-open');
+        if (triggerLink && document.body.contains(triggerLink)) {
+             triggerLink.focus();
+        }
     }
     
     setupEventListeners() {
@@ -363,55 +401,46 @@ class KeyJoltApp {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
 
-    initAboutModal() {
-        if (!this.aboutModal || !this.aboutLink || !this.closeAboutModalBtn) {
-            // console.warn('About modal elements not found. Skipping modal initialization.');
-            // It's possible these elements are not on every page, so don't warn too loudly.
-            return;
-        }
+    initModals() {
+        const modalsMap = [
+            { link: this.aboutLink, modal: this.aboutModal, closeBtn: this.closeAboutModalBtn },
+            { link: this.securityLink, modal: this.securityModal, closeBtn: this.securityModalCloseBtn },
+            { link: this.privacyLink, modal: this.privacyModal, closeBtn: this.privacyModalCloseBtn }
+        ];
 
-        this.aboutLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            this.openAboutModal();
+        modalsMap.forEach(item => {
+            if (item.link && item.modal) {
+                item.modal.triggerLink = item.link; // Store trigger link
+                item.link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.openModal(item.modal);
+                });
+            }
+            if (item.closeBtn && item.modal) {
+                item.closeBtn.addEventListener('click', () => {
+                    this.closeModal(item.modal);
+                });
+            }
         });
 
-        this.closeAboutModalBtn.addEventListener('click', () => {
-            this.closeAboutModal();
-        });
-
+        // Window click to close any open modal
         window.addEventListener('click', (event) => {
-            if (event.target === this.aboutModal) {
-                this.closeAboutModal();
-            }
+            document.querySelectorAll('.modal.modal-open').forEach(modal => {
+                if (event.target === modal) { // Clicked on the modal backdrop
+                    this.closeModal(modal);
+                }
+            });
         });
 
+        // Escape key to close any open modal
         window.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && this.aboutModal && this.aboutModal.style.display === 'block') {
-                this.closeAboutModal();
+            if (event.key === 'Escape') {
+                const openModal = document.querySelector('.modal.modal-open');
+                if (openModal) {
+                    this.closeModal(openModal);
+                }
             }
         });
-    }
-
-    openAboutModal() {
-        if (!this.aboutModal) return;
-        this.aboutModal.style.display = 'block';
-        // Re-initialize Feather icons if they are used inside the modal
-        if (typeof feather !== 'undefined') {
-            feather.replace();
-        }
-        // Focus the close button for accessibility
-        if (this.closeAboutModalBtn) {
-            this.closeAboutModalBtn.focus();
-        }
-    }
-
-    closeAboutModal() {
-        if (!this.aboutModal) return;
-        this.aboutModal.style.display = 'none';
-        // Return focus to the link that opened the modal, if available
-        if (this.aboutLink) {
-            this.aboutLink.focus();
-        }
     }
 }
 

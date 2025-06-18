@@ -8,6 +8,19 @@ class KeyJoltApp {
         this.downloadGrid = document.getElementById('downloadGrid');
         this.successMessage = document.getElementById('successMessage');
         this.errorMessage = document.getElementById('errorMessage');
+
+        // Modal elements
+        this.aboutModal = document.getElementById('aboutModal');
+        this.securityModal = document.getElementById('security-modal');
+        this.privacyModal = document.getElementById('privacy-modal');
+
+        this.aboutLink = document.querySelector('a[href="#about"]');
+        this.securityLink = document.querySelector('a[href="#security"]');
+        this.privacyLink = document.querySelector('a[href="#privacy"]');
+
+        this.closeAboutModalBtn = this.aboutModal ? this.aboutModal.querySelector('.modal-close') : null; // Existing about modal close
+        this.securityModalCloseBtn = this.securityModal ? this.securityModal.querySelector('.close-button') : null;
+        this.privacyModalCloseBtn = this.privacyModal ? this.privacyModal.querySelector('.close-button') : null;
         
         this.validationTimeouts = {};
         this.isGenerating = false;
@@ -29,6 +42,39 @@ class KeyJoltApp {
         
         // Setup form validation
         this.setupValidation();
+
+        // Setup Modals
+        this.initModals();
+    }
+
+    // Generic Modal Handling
+    openModal(modalElement) {
+        if (!modalElement) return;
+        // Close any other open modals first
+        document.querySelectorAll('.modal.modal-open').forEach(m => {
+            if (m !== modalElement) { // Don't remove from the one we are opening
+                m.classList.remove('modal-open');
+            }
+        });
+        modalElement.classList.add('modal-open');
+
+        // Focus management
+        const focusable = modalElement.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusable) {
+            focusable.focus();
+        } else {
+            modalElement.setAttribute('tabindex', '-1'); // Make modal focusable if no children are
+            modalElement.focus();
+        }
+    }
+
+    closeModal(modalElement) {
+        if (!modalElement) return;
+        const triggerLink = modalElement.triggerLink; // Assumes we store this
+        modalElement.classList.remove('modal-open');
+        if (triggerLink && document.body.contains(triggerLink)) {
+             triggerLink.focus();
+        }
     }
     
     setupEventListeners() {
@@ -353,6 +399,48 @@ class KeyJoltApp {
         const sizes = ['B', 'KB', 'MB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    initModals() {
+        const modalsMap = [
+            { link: this.aboutLink, modal: this.aboutModal, closeBtn: this.closeAboutModalBtn },
+            { link: this.securityLink, modal: this.securityModal, closeBtn: this.securityModalCloseBtn },
+            { link: this.privacyLink, modal: this.privacyModal, closeBtn: this.privacyModalCloseBtn }
+        ];
+
+        modalsMap.forEach(item => {
+            if (item.link && item.modal) {
+                item.modal.triggerLink = item.link; // Store trigger link
+                item.link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.openModal(item.modal);
+                });
+            }
+            if (item.closeBtn && item.modal) {
+                item.closeBtn.addEventListener('click', () => {
+                    this.closeModal(item.modal);
+                });
+            }
+        });
+
+        // Window click to close any open modal
+        window.addEventListener('click', (event) => {
+            document.querySelectorAll('.modal.modal-open').forEach(modal => {
+                if (event.target === modal) { // Clicked on the modal backdrop
+                    this.closeModal(modal);
+                }
+            });
+        });
+
+        // Escape key to close any open modal
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                const openModal = document.querySelector('.modal.modal-open');
+                if (openModal) {
+                    this.closeModal(openModal);
+                }
+            }
+        });
     }
 }
 

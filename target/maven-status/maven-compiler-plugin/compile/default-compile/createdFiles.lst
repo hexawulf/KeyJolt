@@ -7,5 +7,5 @@ com/keyjolt/service/PgpKeyService$PgpKeyPair.class
 com/keyjolt/model/KeyResponse.class
 com/keyjolt/service/PgpKeyService.class
 com/keyjolt/model/KeyResponse$FileInfo.class
-com/keyjolt/controller/KeyController.class
 com/keyjolt/util/FileUtils.class
+com/keyjolt/controller/KeyController.class
