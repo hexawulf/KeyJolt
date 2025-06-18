@@ -28,14 +28,15 @@ public class SecurityConfig {
             
             // Configure security headers
             .headers(headers -> headers
-                .frameOptions().deny()
-                .contentTypeOptions().and()
+                .frameOptions(frameOptions -> frameOptions.deny())
+                .contentTypeOptions(contentTypeOptions -> {})
                 .httpStrictTransportSecurity(hstsConfig -> hstsConfig
                     .maxAgeInSeconds(31536000)
-                    .includeSubdomains(true)
+                    .includeSubDomains(true)
                 )
                 .referrerPolicy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
-                .and()
+            )
+            .headers(headers -> headers
                 .addHeaderWriter((request, response) -> {
                     response.setHeader("X-Content-Type-Options", "nosniff");
                     response.setHeader("X-XSS-Protection", "1; mode=block");

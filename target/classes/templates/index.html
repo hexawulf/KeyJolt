@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KeyJolt - Secure PGP Key Generator</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/feather-icons@4.29.0/dist/feather.css">
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.0/dist/feather.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <svg class="logo-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1DA1F2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <circle cx="12" cy="16" r="1"></circle>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <h1>KeyJolt</h1>
+            </div>
+            <p class="tagline">Secure Keys, Instantly</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Information Section -->
+            <section class="info-section">
+                <div class="info-card">
+                    <div class="info-header">
+                        <i data-feather="shield" class="info-icon"></i>
+                        <h2>Generate Secure PGP & SSH Keys</h2>
+                    </div>
+                    <p>Create cryptographically secure PGP and SSH key pairs instantly. Your private keys are generated securely and automatically deleted after download.</p>
+                    
+                    <div class="features">
+                        <div class="feature">
+                            <i data-feather="lock" class="feature-icon"></i>
+                            <span>RSA encryption up to 4096 bits</span>
+                        </div>
+                        <div class="feature">
+                            <i data-feather="clock" class="feature-icon"></i>
+                            <span>Configurable key expiration</span>
+                        </div>
+                        <div class="feature">
+                            <i data-feather="download" class="feature-icon"></i>
+                            <span>Instant secure download</span>
+                        </div>
+                        <div class="feature">
+                            <i data-feather="trash-2" class="feature-icon"></i>
+                            <span>Automatic cleanup after download</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Key Generation Form -->
+            <section class="form-section">
+                <div class="form-card">
+                    <h2>Generate Your Keys</h2>
+                    
+                    <form id="keyGenerationForm" class="key-form">
+                        <!-- Name Field -->
+                        <div class="form-group">
+                            <label for="name" class="form-label">
+                                <i data-feather="user" class="label-icon"></i>
+                                Full Name
+                            </label>
+                            <input type="text" id="name" name="name" class="form-input" 
+                                   placeholder="Enter your full name" required maxlength="50">
+                            <div class="field-help">Used for key identification. Spaces are allowed.</div>
+                            <div class="field-error" id="nameError"></div>
+                        </div>
+
+                        <!-- Email Field -->
+                        <div class="form-group">
+                            <label for="email" class="form-label">
+                                <i data-feather="mail" class="label-icon"></i>
+                                Email Address
+                            </label>
+                            <input type="email" id="email" name="email" class="form-input" 
+                                   placeholder="your.email@example.com" required>
+                            <div class="field-help">Associated with your key pair for identification.</div>
+                            <div class="field-error" id="emailError"></div>
+                        </div>
+
+                        <!-- Encryption Strength Field -->
+                        <div class="form-group">
+                            <label for="encryptionStrength" class="form-label">
+                                <i data-feather="cpu" class="label-icon"></i>
+                                Encryption Strength
+                                <span class="tooltip-trigger" data-tooltip="Higher bit strength provides better security but slower key generation. 4096 bits is recommended for maximum security.">
+                                    <i data-feather="help-circle" class="help-icon"></i>
+                                </span>
+                            </label>
+                            <select id="encryptionStrength" name="encryptionStrength" class="form-select" required>
+                                <option value="">Select encryption strength</option>
+                                <option value="2048">2048 bits (Good)</option>
+                                <option value="3072">3072 bits (Better)</option>
+                                <option value="4096" selected>4096 bits (Best - Recommended)</option>
+                            </select>
+                            <div class="field-help">Higher values provide stronger security.</div>
+                        </div>
+
+                        <!-- Key Expiry Field -->
+                        <div class="form-group">
+                            <label for="keyExpiry" class="form-label">
+                                <i data-feather="calendar" class="label-icon"></i>
+                                Key Expiry (Days)
+                                <span class="tooltip-trigger" data-tooltip="0 means the key never expires. Set a value between 1-3650 days for automatic expiration.">
+                                    <i data-feather="help-circle" class="help-icon"></i>
+                                </span>
+                            </label>
+                            <input type="number" id="keyExpiry" name="keyExpiry" class="form-input" 
+                                   placeholder="0 for never expires" min="0" max="3650" value="0" required>
+                            <div class="field-help">Enter 0 for no expiry, or up to 3650 days (10 years).</div>
+                            <div class="field-error" id="keyExpiryError"></div>
+                        </div>
+
+                        <!-- SSH Key Option -->
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="generateSshKey" name="generateSshKey" class="form-checkbox">
+                                <label for="generateSshKey" class="checkbox-label">
+                                    <i data-feather="terminal" class="label-icon"></i>
+                                    Also generate SSH key pair
+                                    <span class="tooltip-trigger" data-tooltip="Generate an additional SSH key pair for server access and authentication.">
+                                        <i data-feather="help-circle" class="help-icon"></i>
+                                    </span>
+                                </label>
+                            </div>
+                            <div class="field-help">Useful for server access and Git authentication.</div>
+                        </div>
+
+                        <!-- Generate Button -->
+                        <button type="submit" class="btn-generate" id="generateBtn">
+                            <i data-feather="key" class="btn-icon"></i>
+                            <span class="btn-text">Generate Keys</span>
+                            <div class="btn-spinner" id="btnSpinner"></div>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <div class="results-card">
+                    <h2>Your Keys Are Ready!</h2>
+                    <p class="success-message" id="successMessage"></p>
+                    
+                    <div class="download-grid" id="downloadGrid">
+                        <!-- Download links will be populated here -->
+                    </div>
+                    
+                    <div class="security-notice">
+                        <i data-feather="alert-triangle" class="notice-icon"></i>
+                        <div class="notice-content">
+                            <strong>Security Notice:</strong>
+                            <p>Your private keys are automatically deleted from our servers after 5 minutes. Download them immediately and store them securely. Never share your private keys!</p>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-secondary" onclick="resetForm()">
+                        <i data-feather="refresh-cw" class="btn-icon"></i>
+                        Generate New Keys
+                    </button>
+                </div>
+            </section>
+
+            <!-- Error Section -->
+            <section class="error-section" id="errorSection" style="display: none;">
+                <div class="error-card">
+                    <div class="error-header">
+                        <i data-feather="x-circle" class="error-icon"></i>
+                        <h2>Generation Failed</h2>
+                    </div>
+                    <p class="error-message" id="errorMessage"></p>
+                    <button class="btn-secondary" onclick="resetForm()">
+                        <i data-feather="refresh-cw" class="btn-icon"></i>
+                        Try Again
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2025 KeyJolt. Secure key generation for everyone.</p>
+            <div class="footer-links">
+                <a href="#security" class="footer-link">Security</a>
+                <a href="#privacy" class="footer-link">Privacy</a>
+                <a href="#about" class="footer-link">About</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script th:src="@{/js/script.js}"></script>
+</body>
+</html>

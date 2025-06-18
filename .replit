@@ -2,6 +2,7 @@ modules = ["java"]
 
 [nix]
 channel = "stable-24_05"
+packages = ["maven", "openjdk17"]
 
 [workflows]
 runButton = "Project"
@@ -26,3 +27,7 @@ waitForPort = 5000
 
 [deployment]
 run = ["sh", "-c", "mvn clean install && mvn spring-boot:run"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
