@@ -116,7 +116,24 @@ KeyJolt is a secure web application for generating PGP and SSH key pairs instant
 
 Preferred communication style: Simple, everyday language.
 
-## Changelog
+## Recent Changes
 
-Changelog:
-- June 18, 2025. Initial setup
+- June 18, 2025: Complete KeyJolt application deployed successfully
+  - Spring Boot backend with PGP/SSH key generation
+  - Twitter-blue themed responsive UI
+  - Real-time form validation and security features
+  - Rate limiting and automatic file cleanup
+  - GitHub repository created at https://github.com/hexawulf/KeyJolt
+
+## GitHub Repository
+
+Repository URL: https://github.com/hexawulf/KeyJolt
+Author: 0xWulf (dev@0xwulf.dev, @hexawulf)
+
+### Repository Files Created:
+- README.md: Comprehensive documentation with tech stack and features
+- LICENSE: MIT license
+- .gitignore: Java/Maven/Spring Boot gitignore
+- CONTRIBUTING.md: Development and contribution guidelines
+- SECURITY.md: Security policy and vulnerability reporting
+- DEPLOYMENT.md: Production deployment guide
