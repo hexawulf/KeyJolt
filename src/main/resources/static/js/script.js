@@ -50,31 +50,59 @@ class KeyJoltApp {
     // Generic Modal Handling
     openModal(modalElement) {
         if (!modalElement) return;
+
         // Close any other open modals first
         document.querySelectorAll('.modal.modal-open').forEach(m => {
-            if (m !== modalElement) { // Don't remove from the one we are opening
-                m.classList.remove('modal-open');
+            if (m !== modalElement) {
+                // Assuming closeModal handles the actual hiding and class removal
+                this.closeModal(m);
             }
         });
+
+        // Show the modal
         modalElement.classList.add('modal-open');
+        // modalElement.style.display = 'flex'; // Ensure it shows - CSS .modal.modal-open handles this with !important
 
         // Focus management
+        // Attempt to focus the first focusable element in the modal
         const focusable = modalElement.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
         if (focusable) {
             focusable.focus();
-        } else {
-            modalElement.setAttribute('tabindex', '-1'); // Make modal focusable if no children are
+        } else { // Fallback if no focusable element is found
+            modalElement.setAttribute('tabindex', '-1'); // Ensure modal itself is focusable
             modalElement.focus();
         }
+
+        // Store the trigger link if available (assuming it's set on modalElement by initModals)
+        // This part depends on how `triggerLink` is associated with modalElement.
+        // If `this.activeModalTrigger` is the way to store it:
+        // this.activeModalTrigger = modalElement.triggerLink; // or however the trigger is passed/stored
     }
 
     closeModal(modalElement) {
         if (!modalElement) return;
-        const triggerLink = modalElement.triggerLink; // Assumes we store this
+
+        const triggerLink = modalElement.triggerLink; // Assuming triggerLink is a property of modalElement
+
         modalElement.classList.remove('modal-open');
+        modalElement.style.display = 'none'; // Ensure it hides
+
+        // Restore focus to the trigger link if it exists and is part of the document
         if (triggerLink && document.body.contains(triggerLink)) {
-             triggerLink.focus();
+            triggerLink.focus();
+        } else {
+            // Fallback focus if triggerLink is not available or not in DOM
+            // This might be the case if modal was closed by ESC or backdrop click
+            // Or if triggerLink was not correctly associated.
+            // Focusing body or a relevant container can be a fallback.
+            // For now, we rely on the triggerLink being correctly set.
         }
+
+        // If this.activeModal was used to track the currently open modal
+        // if (this.activeModal === modalElement) {
+        //     this.activeModal = null;
+        //     this.activeModalTrigger = null;
+        // }
     }
     
     setupEventListeners() {
