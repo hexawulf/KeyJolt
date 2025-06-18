@@ -255,6 +255,41 @@
     <!-- Tooltip -->
     <div class="tooltip" id="tooltip"></div>
 
+    <!-- Security Modal -->
+    <div id="security-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2><span class="modal-icon">🔒</span> Security at KeyJolt</h2>
+        <p>KeyJolt is built with a security-first approach:</p>
+        <ul>
+          <li><strong>Strong Encryption</strong>: RSA keys up to 4096 bits generated using industry-standard libraries (Bouncy Castle).</li>
+          <li><strong>Automatic Cleanup</strong>: Private keys are securely deleted 5 minutes after generation. No long-term storage.</li>
+          <li><strong>Overwritten with Random Data</strong>: Key files are overwritten in memory before deletion for added security.</li>
+          <li><strong>Rate Limiting</strong>: A maximum of 10 requests/hour with burst protection using Bucket4j.</li>
+          <li><strong>Security Headers</strong>: We enforce HSTS, X-Frame-Options, and a strict Content Security Policy (CSP).</li>
+          <li><strong>HTTPS Only</strong>: All communication is encrypted in transit.</li>
+        </ul>
+        <p>KeyJolt is not a key server. It never stores or shares your private data.</p>
+      </div>
+    </div>
+
+    <!-- Privacy Modal -->
+    <div id="privacy-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2><span class="modal-icon">🛡️</span> Privacy at KeyJolt</h2>
+        <p>Your privacy matters. KeyJolt is designed to be anonymous and private:</p>
+        <ul>
+          <li><strong>No Account Required</strong>: You can generate keys without signing up or providing any login.</li>
+          <li><strong>No Tracking or Analytics</strong>: We do not use cookies, tracking pixels, or analytics scripts.</li>
+          <li><strong>No Data Retention</strong>: Your inputs (name, email, key settings) are processed in-memory and discarded after key generation.</li>
+          <li><strong>End-to-End Experience</strong>: Keys are generated in the backend and offered as immediate secure downloads. Nothing is saved after.</li>
+          <li><strong>Security-First Hosting</strong>: The site is hosted securely with SSL, strict firewalls, and sandboxed processes.</li>
+        </ul>
+        <p>Use KeyJolt confidently—your data never leaves your session.</p>
+      </div>
+    </div>
+
     <script th:src="@{/js/script.js}"></script>
 </body>
 </html>
