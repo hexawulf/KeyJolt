@@ -8,6 +8,11 @@ class KeyJoltApp {
         this.downloadGrid = document.getElementById('downloadGrid');
         this.successMessage = document.getElementById('successMessage');
         this.errorMessage = document.getElementById('errorMessage');
+
+        // About Modal elements
+        this.aboutModal = document.getElementById('aboutModal');
+        this.aboutLink = document.querySelector('a[href="#about"]');
+        this.closeAboutModalBtn = document.getElementById('closeAboutModal');
         
         this.validationTimeouts = {};
         this.isGenerating = false;
@@ -29,6 +34,9 @@ class KeyJoltApp {
         
         // Setup form validation
         this.setupValidation();
+
+        // Setup About Modal
+        this.initAboutModal();
     }
     
     setupEventListeners() {
@@ -389,6 +397,58 @@ window.resetForm = function() {
 document.addEventListener('DOMContentLoaded', function() {
     window.keyJoltApp = new KeyJoltApp();
 });
+
+// Add modal methods to KeyJoltApp prototype
+KeyJoltApp.prototype.initAboutModal = function() {
+    if (!this.aboutModal || !this.aboutLink || !this.closeAboutModalBtn) {
+        // console.warn('About modal elements not found. Skipping modal initialization.');
+        // It's possible these elements are not on every page, so don't warn too loudly.
+        return;
+    }
+
+    this.aboutLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.openAboutModal();
+    });
+
+    this.closeAboutModalBtn.addEventListener('click', () => {
+        this.closeAboutModal();
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target === this.aboutModal) {
+            this.closeAboutModal();
+        }
+    });
+
+    window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && this.aboutModal && this.aboutModal.style.display === 'block') {
+            this.closeAboutModal();
+        }
+    });
+};
+
+KeyJoltApp.prototype.openAboutModal = function() {
+    if (!this.aboutModal) return;
+    this.aboutModal.style.display = 'block';
+    // Re-initialize Feather icons if they are used inside the modal
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    // Focus the close button for accessibility
+    if (this.closeAboutModalBtn) {
+        this.closeAboutModalBtn.focus();
+    }
+};
+
+KeyJoltApp.prototype.closeAboutModal = function() {
+    if (!this.aboutModal) return;
+    this.aboutModal.style.display = 'none';
+    // Return focus to the link that opened the modal, if available
+    if (this.aboutLink) {
+        this.aboutLink.focus();
+    }
+};
 
 // Handle page visibility changes to clean up resources
 document.addEventListener('visibilitychange', function() {
