@@ -693,3 +693,146 @@ select:focus {
     outline: none;
     box-shadow: 0 0 0 3px var(--twitter-blue-light);
 }
+
+/* About Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.6); /* Black w/ opacity for backdrop */
+    padding-top: 60px; /* Location of the box */
+    animation: fadeIn 0.3s ease-out; /* Simple fade-in */
+}
+
+.modal-content {
+    background-color: var(--white);
+    margin: auto;
+    padding: 32px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 600px; /* Max width of modal */
+    box-shadow: var(--shadow-xl);
+    position: relative;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--gray-200);
+    margin-bottom: 24px;
+}
+
+.modal-header h2 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    transition: background-color 0.2s ease;
+}
+
+.modal-close:hover {
+    background-color: var(--gray-100);
+}
+
+.modal-close i {
+    width: 24px;
+    height: 24px;
+    color: var(--gray-600);
+    display: block; /* Ensures proper alignment */
+}
+
+.modal-body {
+    font-size: 1rem;
+    color: var(--gray-700);
+}
+
+.about-section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px dashed var(--gray-200);
+}
+
+.about-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.about-section h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--twitter-blue);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.about-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--twitter-blue);
+}
+
+.about-section p {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+.about-section a {
+    color: var(--twitter-blue);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.about-section a:hover {
+    text-decoration: underline;
+    color: var(--twitter-blue-dark);
+}
+
+/* Responsive adjustments for modal */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        padding: 24px;
+    }
+    .modal-header h2 {
+        font-size: 1.5rem;
+    }
+    .modal-body {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-header {
+        padding-bottom: 12px;
+        margin-bottom: 16px;
+    }
+    .modal-header h2 {
+        font-size: 1.3rem;
+    }
+    .about-section h3 {
+        font-size: 1rem;
+    }
+    .about-icon {
+        width: 16px;
+        height: 16px;
+    }
+}
