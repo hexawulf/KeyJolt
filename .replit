@@ -1,0 +1,28 @@
+modules = ["java"]
+
+[nix]
+channel = "stable-24_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "KeyJolt Server"
+
+[[workflows.workflow]]
+name = "KeyJolt Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "mvn clean install && mvn spring-boot:run"
+waitForPort = 5000
+
+[deployment]
+run = ["sh", "-c", "mvn clean install && mvn spring-boot:run"]
