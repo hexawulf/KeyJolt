@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: keyjolt
+    env: java
+    buildCommand: mvn clean package -DskipTests
+    startCommand: java -jar target/keyjolt-1.0.0.jar
+    plan: free
