@@ -3,6 +3,9 @@ package com.keyjolt.util;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import jakarta.annotation.PreDestroy;
 
 import java.io.*;
 import java.nio.file.*;
@@ -15,6 +18,8 @@ import java.util.concurrent.TimeUnit;
  */
 @Component
 public class FileUtils {
+
+    private static final Logger logger = LoggerFactory.getLogger(FileUtils.class);
     
     @Value("${app.temp-dir:${java.io.tmpdir}/keyjolt}")
     private String tempDir;
@@ -97,7 +102,7 @@ public class FileUtils {
                     secureDelete(file);
                 }
             } catch (Exception e) {
-                System.err.println("Failed to delete file: " + file.getAbsolutePath() + " - " + e.getMessage());
+                logger.error("Failed to delete file: {} - {}", file.getAbsolutePath(), e.getMessage(), e);
             }
         }, cleanupDelay, TimeUnit.MILLISECONDS);
     }
@@ -168,19 +173,21 @@ public class FileUtils {
                         try {
                             secureDelete(path.toFile());
                         } catch (IOException e) {
-                            System.err.println("Failed to delete file: " + path + " - " + e.getMessage());
+                            logger.error("Failed to delete file: {} - {}", path, e.getMessage(), e);
                         }
                     });
             }
         } catch (IOException e) {
-            System.err.println("Failed to cleanup temp directory: " + e.getMessage());
+            logger.error("Failed to cleanup temp directory: {}", e.getMessage(), e);
         }
     }
     
     /**
      * Shutdown cleanup scheduler
      */
+    @PreDestroy
     public void shutdown() {
+        logger.info("Shutting down FileUtils scheduler");
         scheduler.shutdown();
         try {
             if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
