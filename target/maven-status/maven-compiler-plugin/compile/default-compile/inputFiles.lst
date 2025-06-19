@@ -1,8 +1,0 @@
-/app/src/main/java/com/keyjolt/service/SshKeyService.java
-/app/src/main/java/com/keyjolt/model/KeyRequest.java
-/app/src/main/java/com/keyjolt/config/SecurityConfig.java
-/app/src/main/java/com/keyjolt/controller/KeyController.java
-/app/src/main/java/com/keyjolt/KeyjoltApplication.java
-/app/src/main/java/com/keyjolt/model/KeyResponse.java
-/app/src/main/java/com/keyjolt/util/FileUtils.java
-/app/src/main/java/com/keyjolt/service/PgpKeyService.java

@@ -81,4 +81,6 @@ Thumbs.db
 
 # Replit
 .replit
-replit.nix
+replit.nixtarget/
+*.jar
+*.class
