@@ -43,8 +43,10 @@ public class SecurityConfig {
                 )
                 // Disable form-based login.
                 // The default Spring Security login page will not be generated.
-                // This is done because we might implement a custom authentication mechanism later (e.g., token-based).
                 .formLogin(formLogin -> formLogin.disable())
+                // Disable HTTP Basic authentication.
+                // This prevents browser authentication popups and ensures it doesn't interfere with permitAll for static resources.
+                .httpBasic(httpBasic -> httpBasic.disable())
                 // Configure session management to be stateless.
                 // This means the application will not create or use HTTP sessions to store security context.
                 // Each request must be authenticated independently, typically using tokens.
