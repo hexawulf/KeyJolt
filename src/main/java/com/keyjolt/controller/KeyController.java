@@ -5,6 +5,8 @@ import com.keyjolt.model.KeyResponse;
 import com.keyjolt.service.PgpKeyService;
 import com.keyjolt.service.SshKeyService;
 import com.keyjolt.util.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Bucket4j;
@@ -36,6 +38,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Controller
 public class KeyController {
+
+    private static final Logger logger = LoggerFactory.getLogger(KeyController.class);
     
     @Autowired
     private PgpKeyService pgpKeyService;
@@ -60,6 +64,7 @@ public class KeyController {
      */
     @GetMapping("/")
     public String index(Model model) {
+        logger.info("Serving index page");
         model.addAttribute("keyRequest", new KeyRequest());
         model.addAttribute("encryptionStrengths", new int[]{2048, 3072, 4096});
         return "index";
@@ -74,7 +79,9 @@ public class KeyController {
             @Valid @RequestBody KeyRequest request,
             BindingResult bindingResult,
             HttpServletRequest httpRequest) {
-        
+
+        logger.info("Received key generation request from {}", getClientIpAddress(httpRequest));
+
         // Check rate limiting
         String clientIp = getClientIpAddress(httpRequest);
         Bucket bucket = getBucket(clientIp);
@@ -132,7 +139,9 @@ public class KeyController {
                     fileUtils.getFileSize(sshKeys.getPrivateKeyFile())
                 ));
             }
-            
+
+            logger.info("Generated keys for {}", request.getEmail());
+
             return ResponseEntity.ok(KeyResponse.success(
                 "Keys generated successfully! Download them below.",
                 pgpKeys.getKeyId(),
@@ -140,7 +149,7 @@ public class KeyController {
             ));
             
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Failed to generate keys: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(KeyResponse.error("Failed to generate keys: " + e.getMessage()));
         }
@@ -153,7 +162,7 @@ public class KeyController {
     public ResponseEntity<FileSystemResource> downloadFile(
             @PathVariable String filename,
             HttpServletResponse response) {
-        
+
         try {
             // Validate filename to prevent directory traversal
             if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
@@ -182,12 +191,14 @@ public class KeyController {
             headers.setPragma("no-cache");
             headers.setExpires(0);
             
+            logger.info("Serving download of {}", filename);
+
             return ResponseEntity.ok()
                 .headers(headers)
                 .body(new FileSystemResource(file));
-                
+
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Failed to download file {}: {}", filename, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
