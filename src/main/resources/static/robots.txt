@@ -1,2 +1,9 @@
 User-agent: *
-Disallow: /
+Disallow: /generate
+Disallow: /api/
+Disallow: /admin/
+Allow: /
+Allow: /favicon.ico
+Allow: /site.webmanifest
+Allow: /android-chrome-192x192.png
+Allow: /android-chrome-512x512.png
