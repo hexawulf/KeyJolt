@@ -4,57 +4,69 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
-/**
- * Security configuration for KeyJolt application
- */
-@Configuration
-@EnableWebSecurity
+@Configuration // Indicates that this class contains Spring configuration
+@EnableWebSecurity // Enables Spring Security's web security support
 public class SecurityConfig {
-    
+
+    // Bean for password encoding.
+    // BCryptPasswordEncoder is a strong hashing algorithm for passwords.
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    // Bean for configuring the security filter chain.
+    // This is the core of Spring Security configuration in modern Spring Boot.
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Disable CSRF for API endpoints
-            .csrf(csrf -> csrf.disable())
-            
-            // Configure authorization
-            .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/", "/api/**", "/css/**", "/js/**", "/download/**").permitAll()
-                .anyRequest().authenticated()
-            )
-            
-            // Configure security headers
-            .headers(headers -> headers
-                .frameOptions(frameOptions -> frameOptions.deny())
-                .contentTypeOptions(contentTypeOptions -> {})
-                .httpStrictTransportSecurity(hstsConfig -> hstsConfig
-                    .maxAgeInSeconds(31536000)
-                    .includeSubDomains(true)
+                // Disable CSRF (Cross-Site Request Forgery) protection.
+                // This is often disabled for stateless APIs or when using other token-based protection.
+                // For educational purposes, it's disabled here; in production, ensure proper CSRF handling if not using stateless tokens.
+                .csrf(csrf -> csrf.disable())
+                // Configure authorization rules for HTTP requests.
+                .authorizeHttpRequests(authorize -> authorize
+                        // Allow public access (permitAll) to these specific paths.
+                        // Useful for static resources, home page, etc.
+                        .requestMatchers("/", "/index", "/css/**", "/js/**", "/favicon.ico", "/robots.txt").permitAll()
+                        // Require authentication for all other requests.
+                        .anyRequest().authenticated()
                 )
-                .referrerPolicy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
-            )
-            .headers(headers -> headers
-                .addHeaderWriter((request, response) -> {
-                    response.setHeader("X-Content-Type-Options", "nosniff");
-                    response.setHeader("X-XSS-Protection", "1; mode=block");
-                    // CSP tightened:
-                    // font-src set to 'self' to rely on system fonts and avoid external font dependencies.
-                    // style-src set to 'self' and 'unsafe-inline' to use self-hosted stylesheets
-                    // and allow inline styles, avoiding external stylesheet dependencies.
-                    // This aligns with the policy of not using external fonts like Google Fonts.
-                    response.setHeader("Content-Security-Policy", 
-                        "default-src 'self'; " +
-                        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
-                        "style-src 'self' 'unsafe-inline'; " +
-                        "font-src 'self'; " +
-                        "img-src 'self' data:; " +
-                        "connect-src 'self'");
-                })
-            );
-            
-        return http.build();
+                // Disable form-based login.
+                // The default Spring Security login page will not be generated.
+                // This is done because we might implement a custom authentication mechanism later (e.g., token-based).
+                .formLogin(formLogin -> formLogin.disable())
+                // Configure session management to be stateless.
+                // This means the application will not create or use HTTP sessions to store security context.
+                // Each request must be authenticated independently, typically using tokens.
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        return http.build(); // Builds the SecurityFilterChain
+    }
+
+    // Bean for an in-memory UserDetailsService.
+    // This is a simple way to provide user credentials for testing or small applications.
+    // For production, you would typically use a database-backed UserDetailsService.
+    @Bean
+    public UserDetailsService userDetailsService() {
+        // Create an admin user with username "admin", a securely encoded password "admin123", and role "ADMIN".
+        // User.builder() provides a fluent API for creating UserDetails objects.
+        UserDetails adminUser = User.builder()
+                .username("admin")
+                .password(passwordEncoder().encode("admin123")) // Password must be encoded
+                .roles("ADMIN") // Roles are automatically prefixed with "ROLE_" by Spring Security
+                .build();
+
+        // Return an InMemoryUserDetailsManager initialized with the created user(s).
+        return new InMemoryUserDetailsManager(adminUser);
     }
 }
