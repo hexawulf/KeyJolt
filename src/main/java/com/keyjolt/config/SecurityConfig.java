@@ -30,45 +30,45 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 // Disable CSRF (Cross-Site Request Forgery) protection.
-                // This is often disabled for stateless APIs or when using other token-based protection.
-                // For educational purposes, it's disabled here; in production, ensure proper CSRF handling if not using stateless tokens.
                 .csrf(csrf -> csrf.disable())
                 // Configure authorization rules for HTTP requests.
                 .authorizeHttpRequests(authorize -> authorize
                         // Allow public access (permitAll) to these specific paths.
-                        // Useful for static resources, home page, etc.
-                        .requestMatchers("/", "/index", "/css/**", "/js/**", "/favicon.ico", "/robots.txt").permitAll()
+                        .requestMatchers(
+                                "/",
+                                "/index", // Assuming /index also serves content like /
+                                "/css/**",
+                                "/js/**",
+                                "/images/**", // For general image assets
+                                "/favicon.ico",
+                                "/favicon-16x16.png",
+                                "/favicon-32x32.png",
+                                "/apple-touch-icon.png",
+                                "/android-chrome-*.png", // Wildcard for different sizes
+                                "/site.webmanifest",
+                                "/robots.txt"
+                        ).permitAll()
                         // Require authentication for all other requests.
                         .anyRequest().authenticated()
                 )
                 // Disable form-based login.
-                // The default Spring Security login page will not be generated.
                 .formLogin(formLogin -> formLogin.disable())
                 // Disable HTTP Basic authentication.
-                // This prevents browser authentication popups and ensures it doesn't interfere with permitAll for static resources.
                 .httpBasic(httpBasic -> httpBasic.disable())
                 // Configure session management to be stateless.
-                // This means the application will not create or use HTTP sessions to store security context.
-                // Each request must be authenticated independently, typically using tokens.
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build(); // Builds the SecurityFilterChain
     }
 
     // Bean for an in-memory UserDetailsService.
-    // This is a simple way to provide user credentials for testing or small applications.
-    // For production, you would typically use a database-backed UserDetailsService.
     @Bean
     public UserDetailsService userDetailsService() {
-        // Create an admin user with username "admin", a securely encoded password "admin123", and role "ADMIN".
-        // User.builder() provides a fluent API for creating UserDetails objects.
         UserDetails adminUser = User.builder()
                 .username("admin")
                 .password(passwordEncoder().encode("admin123")) // Password must be encoded
                 .roles("ADMIN") // Roles are automatically prefixed with "ROLE_" by Spring Security
                 .build();
-
-        // Return an InMemoryUserDetailsManager initialized with the created user(s).
         return new InMemoryUserDetailsManager(adminUser);
     }
 }
