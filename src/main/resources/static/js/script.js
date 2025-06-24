@@ -408,13 +408,19 @@ class KeyJoltApp {
                     <strong>File:</strong> ${file.filename}<br>
                     <strong>Size:</strong> ${this.formatFileSize(file.size)}
                 </div>
-                <a href="${file.downloadUrl}" class="download-link" download="${file.filename}">
+                <a href="${file.downloadUrl}" class="download-link" data-filename="${file.filename}">
                     <i data-feather="download" class="download-link-icon"></i>
                     Download
                 </a>
             `;
-            
+
             this.downloadGrid.appendChild(downloadItem);
+
+            const link = downloadItem.querySelector('.download-link');
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.downloadFile(file.downloadUrl, file.filename);
+            });
         });
         
         // Re-initialize Feather icons for new elements
@@ -429,6 +435,41 @@ class KeyJoltApp {
         const sizes = ['B', 'KB', 'MB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    async downloadFile(downloadUrl, filename) {
+        fetch(downloadUrl)
+            .then(response => {
+                const contentType = response.headers.get('content-type');
+
+                if (!response.ok) {
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json().then(data => {
+                            console.error('Download failed:', data.error);
+                        });
+                    } else {
+                        throw new Error('Download failed with unknown error.');
+                    }
+                }
+
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json().then(data => {
+                        console.error('Download failed:', data.error);
+                    });
+                } else {
+                    return response.blob().then(blob => {
+                        const link = document.createElement('a');
+                        link.href = window.URL.createObjectURL(blob);
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Unexpected fetch error:', error);
+            });
     }
 
     initModals() {

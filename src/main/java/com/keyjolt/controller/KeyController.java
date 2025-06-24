@@ -158,26 +158,42 @@ public class KeyController {
     /**
      * Download generated key files
      */
-    @GetMapping("/download/{filename:.+}")
+    @GetMapping("/download/{filename}")
     public ResponseEntity<?> downloadFile(@PathVariable String filename) {
         try {
-            java.nio.file.Path filePath = java.nio.file.Path.of(fileUtils.getTempDir(), filename);
+            // Basic path sanitization
+            if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+                return ResponseEntity.badRequest()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("error", "Invalid filename."));
+            }
 
-            if (java.nio.file.Files.exists(filePath) && java.nio.file.Files.isReadable(filePath)) {
-                UrlResource resource = new UrlResource(filePath.toUri());
-                return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .body(resource);
-            } else {
+            java.nio.file.Path filePath = java.nio.file.Path.of(fileUtils.getTempDir()).resolve(filename).normalize();
+
+            if (!java.nio.file.Files.exists(filePath)) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(Map.of("error", "File not found or already deleted."));
+                    .body(Map.of("error", "File not found."));
             }
-        } catch (java.net.MalformedURLException e) {
+
+            Resource fileResource = new UrlResource(filePath.toUri());
+
+            if (!fileResource.exists() || !fileResource.isReadable()) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("error", "File is not readable."));
+            }
+
+            return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + fileResource.getFilename() + "\"")
+                .body(fileResource);
+
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("error", "Failed to load the file."));
+                .body(Map.of("error", "Download failed: " + e.getMessage()));
         }
     }
     /**
