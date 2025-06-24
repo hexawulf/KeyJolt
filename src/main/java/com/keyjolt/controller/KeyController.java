@@ -12,7 +12,6 @@ import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Bucket4j;
 import io.github.bucket4j.Refill;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -159,73 +158,26 @@ public class KeyController {
     /**
      * Download generated key files
      */
-    @GetMapping("/download/{filename}")
-    public ResponseEntity<?> downloadFile(@PathVariable String filename) { // Removed HttpServletResponse, not used
+    @GetMapping("/download/{filename:.+}")
+    public ResponseEntity<?> downloadFile(@PathVariable String filename) {
         try {
-            // Basic filename validation (already present, good to keep)
-            if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
-                logger.warn("Attempted directory traversal for filename: {}", filename);
-                return ResponseEntity.badRequest()
-                                     .contentType(MediaType.APPLICATION_JSON)
-                                     .body(Map.of("error", "Invalid filename format."));
-            }
+            java.nio.file.Path filePath = java.nio.file.Path.of(fileUtils.getTempDir(), filename);
 
-            String tempDirPath = fileUtils.getTempDir();
-            logger.info("Temp directory from FileUtils: {}", tempDirPath);
-            
-            java.nio.file.Path filePath = java.nio.file.Paths.get(tempDirPath).resolve(filename).normalize();
-            logger.info("Constructed file path for download: {}", filePath.toString());
-
-            boolean fileActuallyExists = java.nio.file.Files.exists(filePath);
-            logger.info("Checking existence with Files.exists({}): {}", filePath.toString(), fileActuallyExists);
-
-            if (!fileActuallyExists) {
-                logger.warn("File not found using Files.exists check for path: {}", filePath.toString());
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                                     .contentType(MediaType.APPLICATION_JSON)
-                                     .body(Map.of("error", "File not found at specified path.",
-                                                  "filename", filename,
-                                                  "pathChecked", filePath.toString()));
-            }
-
-            Resource resource = new UrlResource(filePath.toUri());
-            logger.info("UrlResource created with URI: {}", filePath.toUri().toString());
-
-            boolean resourceExists = resource.exists();
-            boolean resourceIsReadable = resource.isReadable();
-            logger.info("UrlResource check - Exists: {}, Readable: {} for path: {}", resourceExists, resourceIsReadable, filePath.toString());
-
-            if (!resourceExists || !resourceIsReadable) {
-                logger.error("UrlResource indicates file does not exist or is not readable. Path: {}, ResourceExists: {}, ResourceIsReadable: {}",
-                             filePath.toString(), resourceExists, resourceIsReadable);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                     .contentType(MediaType.APPLICATION_JSON)
-                                     .body(Map.of("error", "File exists but cannot be read or accessed by UrlResource.",
-                                                  "filename", filename,
-                                                  "pathChecked", filePath.toString(),
-                                                  "resourceExists", resourceExists,
-                                                  "resourceIsReadable", resourceIsReadable));
-            }
-
-            logger.info("Proceeding to serve file: {} from path: {}", filename, filePath.toString());
-
-            return ResponseEntity.ok()
+            if (java.nio.file.Files.exists(filePath) && java.nio.file.Files.isReadable(filePath)) {
+                UrlResource resource = new UrlResource(filePath.toUri());
+                return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"") // Use original filename for disposition
                     .body(resource);
-
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("error", "File not found or already deleted."));
+            }
         } catch (java.net.MalformedURLException e) {
-            logger.error("Malformed URL for file {}: {}", filename, e.getMessage(), e);
-            return ResponseEntity.badRequest()
-                                 .contentType(MediaType.APPLICATION_JSON)
-                                 .body(Map.of("error", "Invalid file path leading to Malformed URL.",
-                                              "filename", filename));
-        } catch (Exception e) {
-            logger.error("Unexpected error occurred while trying to download file {}: {}", filename, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .contentType(MediaType.APPLICATION_JSON)
-                                 .body(Map.of("error", "An unexpected server error occurred.",
-                                              "filename", filename));
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("error", "Failed to load the file."));
         }
     }
     /**
