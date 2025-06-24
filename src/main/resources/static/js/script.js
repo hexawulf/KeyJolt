@@ -295,7 +295,9 @@ class KeyJoltApp {
             email: document.getElementById('email').value.trim(),
             encryptionStrength: parseInt(document.getElementById('encryptionStrength').value),
             keyExpiry: parseInt(document.getElementById('keyExpiry').value),
-            generateSshKey: document.getElementById('generateSshKey').checked
+            generateSshKey: document.getElementById('generateSshKey').checked,
+            // Add password to form data, it's okay if it's null or empty
+            password: document.getElementById('password') ? document.getElementById('password').value : null
         };
     }
     

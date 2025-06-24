@@ -129,6 +129,21 @@
                             <div class="field-error" id="keyExpiryError"></div>
                         </div>
 
+                        <!-- Password Field (Optional) -->
+                        <div class="form-group">
+                            <label for="password" class="form-label">
+                                <i data-feather="lock" class="label-icon"></i>
+                                Password (Optional)
+                                <span class="tooltip-trigger" data-tooltip="If you provide a password, your PGP private key will be encrypted. Leave blank for an unencrypted private key.">
+                                    <i data-feather="help-circle" class="help-icon"></i>
+                                </span>
+                            </label>
+                            <input type="password" id="password" name="password" class="form-input"
+                                   placeholder="Enter a strong password (optional)">
+                            <div class="field-help">Encrypts your PGP private key. Leave blank if not needed.</div>
+                            <div class="field-error" id="passwordError"></div>
+                        </div>
+
                         <!-- SSH Key Option -->
                         <div class="form-group">
                             <div class="checkbox-group">

@@ -27,17 +27,19 @@ public class KeyRequest {
     private Integer keyExpiry;
     
     private boolean generateSshKey = false;
+    private String password; // Optional password for PGP private key
     
     // Default constructor
     public KeyRequest() {}
     
     // Constructor with all fields
-    public KeyRequest(String name, String email, Integer encryptionStrength, Integer keyExpiry, boolean generateSshKey) {
+    public KeyRequest(String name, String email, Integer encryptionStrength, Integer keyExpiry, boolean generateSshKey, String password) {
         this.name = name;
         this.email = email;
         this.encryptionStrength = encryptionStrength;
         this.keyExpiry = keyExpiry;
         this.generateSshKey = generateSshKey;
+        this.password = password;
     }
     
     // Getters and setters
@@ -81,6 +83,14 @@ public class KeyRequest {
         this.generateSshKey = generateSshKey;
     }
     
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     /**
      * Get sanitized name for file naming
      */

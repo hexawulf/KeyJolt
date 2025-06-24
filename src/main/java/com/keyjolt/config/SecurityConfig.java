@@ -42,7 +42,6 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/",
                                 "/generate", // Allow access to the key generation endpoint
-                                "/api/generate", // Allow access to the API endpoint for key generation
                                 "/index", // Assuming /index also serves content like /
                                 "/css/**",
                                 "/js/**",
