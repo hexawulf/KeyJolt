@@ -86,7 +86,7 @@ public class SecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**") // Apply CORS configuration to all paths
-                        .allowedOrigins("https://keyjolt.piapps.dev") // Allow requests from this origin
+                        .allowedOrigins("https://keyjolt.piapps.dev", "https://keyjolt.dev") // Allow requests from these origins
                         .allowedMethods("GET", "POST") // Allow specified HTTP methods
                         .allowCredentials(true); // Allow credentials like cookies, authorization headers
             }
