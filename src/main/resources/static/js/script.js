@@ -440,35 +440,29 @@ class KeyJoltApp {
     async downloadFile(downloadUrl, filename) {
         fetch(downloadUrl)
             .then(response => {
-                const contentType = response.headers.get('content-type');
-
                 if (!response.ok) {
-                    if (contentType && contentType.includes('application/json')) {
+                    const contentType = response.headers.get('content-type') || '';
+
+                    if (contentType.includes('application/json')) {
                         return response.json().then(data => {
-                            console.error('Download failed:', data.error);
+                            console.error('Download failed:', data.error || 'Unknown error.');
                         });
-                    } else {
-                        throw new Error('Download failed with unknown error.');
                     }
+
+                    throw new Error(`Download failed with status ${response.status}`);
                 }
 
-                if (contentType && contentType.includes('application/json')) {
-                    return response.json().then(data => {
-                        console.error('Download failed:', data.error);
-                    });
-                } else {
-                    return response.blob().then(blob => {
-                        const link = document.createElement('a');
-                        link.href = window.URL.createObjectURL(blob);
-                        link.download = filename;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    });
-                }
+                return response.blob().then(blob => {
+                    const link = document.createElement('a');
+                    link.href = window.URL.createObjectURL(blob);
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                });
             })
             .catch(error => {
-                console.error('Unexpected fetch error:', error);
+                console.error('Unexpected fetch error:', error.message);
             });
     }
 
