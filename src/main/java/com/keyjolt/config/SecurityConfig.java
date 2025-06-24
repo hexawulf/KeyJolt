@@ -55,7 +55,8 @@ public class SecurityConfig {
                                 "/apple-touch-icon.png",
                                 "/android-chrome-*.png", // Wildcard for different sizes
                                 "/site.webmanifest",
-                                "/robots.txt"
+                                "/robots.txt",
+                                "/download/**" // Allow public access to generated files
                         ).permitAll()
                         // Require authentication for all other requests.
                         .anyRequest().authenticated()
