@@ -159,6 +159,13 @@ public class FileUtils {
         Path filePath = Paths.get(tempDir, filename);
         return filePath.toFile();
     }
+
+    /**
+     * Get the configured temporary directory path
+     */
+    public String getTempDir() {
+        return tempDir;
+    }
     
     /**
      * Clean up all files in temp directory

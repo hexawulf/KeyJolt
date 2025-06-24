@@ -16,7 +16,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -159,19 +160,25 @@ public class KeyController {
      * Download generated key files
      */
     @GetMapping("/download/{filename}")
-    public ResponseEntity<FileSystemResource> downloadFile(
+    public ResponseEntity<Resource> downloadFile(
             @PathVariable String filename,
-            HttpServletResponse response) {
+            HttpServletResponse response) { // HttpServletResponse might not be needed anymore
 
         try {
             // Validate filename to prevent directory traversal
             if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+                logger.warn("Attempted directory traversal for filename: {}", filename);
                 return ResponseEntity.badRequest().build();
             }
+
+            // Construct the full path to the file
+            // This requires a new method in FileUtils to get the tempDir path
+            java.nio.file.Path filePath = java.nio.file.Paths.get(fileUtils.getTempDir()).resolve(filename).normalize();
             
-            File file = fileUtils.getFile(filename);
-            
-            if (!file.exists()) {
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists() || !resource.isReadable()) {
+                logger.error("File not found or not readable: {}", filePath);
                 return ResponseEntity.notFound().build();
             }
             
@@ -180,23 +187,27 @@ public class KeyController {
             if (filename.endsWith(".asc")) {
                 contentType = "application/pgp-keys";
             } else if (filename.endsWith(".key")) {
-                contentType = "application/x-openssh-key";
+                contentType = "application/x-openssh-key"; // Assuming .key is for SSH private keys
             }
             
             // Set headers for secure download
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.parseMediaType(contentType));
-            headers.setContentDispositionFormData("attachment", filename);
+            // Ensure the filename in Content-Disposition is the base name, not the full path
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"");
             headers.setCacheControl("no-cache, no-store, must-revalidate");
             headers.setPragma("no-cache");
             headers.setExpires(0);
             
-            logger.info("Serving download of {}", filename);
+            logger.info("Serving download of {} from path {}", resource.getFilename(), filePath);
 
             return ResponseEntity.ok()
                 .headers(headers)
-                .body(new FileSystemResource(file));
+                .body(resource);
 
+        } catch (java.net.MalformedURLException e) {
+            logger.error("Malformed URL for file {}: {}", filename, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } catch (Exception e) {
             logger.error("Failed to download file {}: {}", filename, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
