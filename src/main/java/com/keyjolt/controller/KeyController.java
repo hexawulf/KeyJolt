@@ -174,13 +174,23 @@ public class KeyController {
             // Construct the full path to the file
             // This requires a new method in FileUtils to get the tempDir path
             java.nio.file.Path filePath = java.nio.file.Paths.get(fileUtils.getTempDir()).resolve(filename).normalize();
+            logger.info("Attempting to download file. Resolved path: {}", filePath);
             
             Resource resource = new UrlResource(filePath.toUri());
 
             if (!resource.exists() || !resource.isReadable()) {
-                logger.error("File not found or not readable: {}", filePath);
-                return ResponseEntity.notFound().build();
+                logger.error("File not found or not readable at path: {}. Exists: {}, Readable: {}",
+                             filePath, resource.exists(), resource.isReadable());
+                // Return JSON error response
+                Map<String, String> errorResponse = new ConcurrentHashMap<>();
+                errorResponse.put("error", "File not found or not accessible.");
+                errorResponse.put("filename", filename);
+                errorResponse.put("requestedPath", filePath.toString());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                     .contentType(MediaType.APPLICATION_JSON)
+                                     .body(errorResponse);
             }
+            logger.info("File resource found and is readable: {}", filePath);
             
             // Determine content type based on file extension
             String contentType = "application/octet-stream";

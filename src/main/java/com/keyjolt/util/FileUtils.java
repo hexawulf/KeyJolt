@@ -53,9 +53,14 @@ public class FileUtils {
         Files.write(filePath, content.getBytes("UTF-8"));
         
         File file = filePath.toFile();
+        long creationTime = System.currentTimeMillis();
+        long deletionTime = creationTime + cleanupDelay;
+
+        logger.info("File written to: {}. Filename: {}. Created: {}. Scheduled deletion: {}",
+                    filePath.toAbsolutePath(), filename, new java.util.Date(creationTime), new java.util.Date(deletionTime));
         
         // Schedule automatic deletion
-        scheduleFileDeletion(file);
+        scheduleFileDeletion(file, filePath.toAbsolutePath().toString()); // Pass path for logging
         
         return file;
     }
@@ -70,9 +75,14 @@ public class FileUtils {
         Files.write(filePath, content);
         
         File file = filePath.toFile();
+        long creationTime = System.currentTimeMillis();
+        long deletionTime = creationTime + cleanupDelay;
+
+        logger.info("File written to: {}. Filename: {}. Created: {}. Scheduled deletion: {}",
+                    filePath.toAbsolutePath(), filename, new java.util.Date(creationTime), new java.util.Date(deletionTime));
         
         // Schedule automatic deletion
-        scheduleFileDeletion(file);
+        scheduleFileDeletion(file, filePath.toAbsolutePath().toString()); // Pass path for logging
         
         return file;
     }
@@ -94,15 +104,19 @@ public class FileUtils {
     /**
      * Schedule file deletion after delay
      */
-    private void scheduleFileDeletion(File file) {
+    private void scheduleFileDeletion(File file, String originalPathForLogging) {
         scheduler.schedule(() -> {
             try {
                 if (file.exists()) {
+                    logger.info("Attempting to securely delete file: {}", originalPathForLogging);
                     // Overwrite file content before deletion for security
                     secureDelete(file);
+                    logger.info("Successfully deleted file: {}", originalPathForLogging);
+                } else {
+                    logger.warn("File scheduled for deletion no longer exists: {}", originalPathForLogging);
                 }
             } catch (Exception e) {
-                logger.error("Failed to delete file: {} - {}", file.getAbsolutePath(), e.getMessage(), e);
+                logger.error("Failed to delete file: {} - {}", originalPathForLogging, e.getMessage(), e);
             }
         }, cleanupDelay, TimeUnit.MILLISECONDS);
     }
