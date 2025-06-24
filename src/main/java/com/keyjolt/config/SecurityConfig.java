@@ -2,10 +2,13 @@ package com.keyjolt.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -29,6 +32,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Enable CORS with custom configuration
+                .cors(Customizer.withDefaults())
                 // Disable CSRF (Cross-Site Request Forgery) protection.
                 .csrf(csrf -> csrf.disable())
                 // Configure authorization rules for HTTP requests.
@@ -36,6 +41,7 @@ public class SecurityConfig {
                         // Allow public access (permitAll) to these specific paths.
                         .requestMatchers(
                                 "/",
+                                "/generate", // Allow access to the key generation endpoint
                                 "/index", // Assuming /index also serves content like /
                                 "/css/**",
                                 "/js/**",
@@ -70,5 +76,20 @@ public class SecurityConfig {
                 .roles("ADMIN") // Roles are automatically prefixed with "ROLE_" by Spring Security
                 .build();
         return new InMemoryUserDetailsManager(adminUser);
+    }
+
+    // Bean for configuring CORS (Cross-Origin Resource Sharing).
+    // This allows requests from specified origins (e.g., your frontend application).
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/**") // Apply CORS configuration to all paths
+                        .allowedOrigins("https://keyjolt.piapps.dev") // Allow requests from this origin
+                        .allowedMethods("GET", "POST") // Allow specified HTTP methods
+                        .allowCredentials(true); // Allow credentials like cookies, authorization headers
+            }
+        };
     }
 }
