@@ -160,7 +160,7 @@ public class KeyController {
      * Download generated key files
      */
     @GetMapping("/download/{filename}")
-    public ResponseEntity<Resource> downloadFile(
+    public ResponseEntity<?> downloadFile(
             @PathVariable String filename,
             HttpServletResponse response) { // HttpServletResponse might not be needed anymore
 
@@ -181,17 +181,14 @@ public class KeyController {
             if (!resource.exists() || !resource.isReadable()) {
                 logger.error("File not found or not readable at path: {}. Exists: {}, Readable: {}",
                              filePath, resource.exists(), resource.isReadable());
-                // Return JSON error response
-                Map<String, String> errorResponse = new ConcurrentHashMap<>();
-                errorResponse.put("error", "File not found or not accessible.");
-                errorResponse.put("filename", filename);
-                errorResponse.put("requestedPath", filePath.toString());
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                                      .contentType(MediaType.APPLICATION_JSON)
-                                     .body(errorResponse);
+                                     .body(Map.of("error", "File not found or not accessible.",
+                                                  "filename", filename,
+                                                  "requestedPath", filePath.toString()));
             }
             logger.info("File resource found and is readable: {}", filePath);
-            
+
             // Determine content type based on file extension
             String contentType = "application/octet-stream";
             if (filename.endsWith(".asc")) {
@@ -199,31 +196,36 @@ public class KeyController {
             } else if (filename.endsWith(".key")) {
                 contentType = "application/x-openssh-key"; // Assuming .key is for SSH private keys
             }
-            
+
             // Set headers for secure download
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(contentType));
-            // Ensure the filename in Content-Disposition is the base name, not the full path
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"");
-            headers.setCacheControl("no-cache, no-store, must-revalidate");
-            headers.setPragma("no-cache");
-            headers.setExpires(0);
-            
+            HttpHeaders httpHeaders = new HttpHeaders(); // Renamed to avoid conflict with class name
+            httpHeaders.setContentType(MediaType.parseMediaType(contentType));
+            httpHeaders.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"");
+            httpHeaders.setCacheControl("no-cache, no-store, must-revalidate");
+            httpHeaders.setPragma("no-cache");
+            httpHeaders.setExpires(0);
+
             logger.info("Serving download of {} from path {}", resource.getFilename(), filePath);
 
             return ResponseEntity.ok()
-                .headers(headers)
+                .headers(httpHeaders)
                 .body(resource);
 
         } catch (java.net.MalformedURLException e) {
             logger.error("Malformed URL for file {}: {}", filename, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                                 .contentType(MediaType.APPLICATION_JSON)
+                                 .body(Map.of("error", "Invalid file path or filename.",
+                                              "filename", filename));
         } catch (Exception e) {
             logger.error("Failed to download file {}: {}", filename, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                 .contentType(MediaType.APPLICATION_JSON)
+                                 .body(Map.of("error", "An unexpected error occurred while processing the file download.",
+                                              "filename", filename));
         }
     }
-    
+
     /**
      * Validate individual form fields via AJAX
      */
