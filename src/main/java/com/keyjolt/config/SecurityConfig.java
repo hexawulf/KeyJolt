@@ -58,6 +58,12 @@ public class SecurityConfig {
                                 "/robots.txt",
                                 "/download/**" // Allow public access to generated files
                         ).permitAll()
+                        // Deny common WordPress paths often probed by bots
+                        .requestMatchers(
+                                "/wp-admin/**",
+                                "/wordpress/**",
+                                "/wp-login.php"
+                        ).denyAll()
                         // Require authentication for all other requests.
                         .anyRequest().authenticated()
                 )
