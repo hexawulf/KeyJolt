@@ -549,7 +549,7 @@ document.addEventListener('visibilitychange', function() {
         // Page is hidden, clean up any ongoing operations
         const app = window.keyJoltApp;
         if (app && app.isGenerating) {
-            console.log('Page hidden during generation');
+            // Generation should stop if user navigates away
         }
     }
 });

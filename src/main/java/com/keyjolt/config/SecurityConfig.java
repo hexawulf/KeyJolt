@@ -11,12 +11,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import java.util.List; // Added this line
+import java.util.List;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 @Configuration // Indicates that this class contains Spring configuration
 @EnableWebSecurity // Enables Spring Security's web security support
@@ -72,7 +73,17 @@ public class SecurityConfig {
                 // Disable HTTP Basic authentication.
                 .httpBasic(httpBasic -> httpBasic.disable())
                 // Configure session management to be stateless.
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Add common security headers
+                .headers(headers -> headers
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .maxAgeInSeconds(31536000))
+                        .contentSecurityPolicy(csp -> csp
+                                .policyDirectives("default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self'; img-src 'self'; object-src 'none'"))
+                        .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+                        .xssProtection(Customizer.withDefaults())
+                );
 
         return http.build(); // Builds the SecurityFilterChain
     }
