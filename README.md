@@ -119,6 +119,10 @@ app.encryption.default-strength=4096
 app.encryption.max-expiry-days=3650
 ```
 
+Copy `src/main/resources/application-example.properties` to
+`src/main/resources/application.properties` and adjust values for
+your environment. **Do not** commit secrets to version control.
+
 ---
 
 ## 📖 Usage
@@ -188,6 +192,8 @@ keyjolt/
 - Configure proper firewall rules
 - Set up monitoring and alerting
 - Regular security updates
+- Restrict access to `/actuator` endpoints or disable them
+- Set `SPRING_PROFILES_ACTIVE=production` for production builds
 
 ### **Key Safety**
 - Private keys are generated server-side and immediately deleted
