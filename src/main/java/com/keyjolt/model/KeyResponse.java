@@ -1,7 +1,8 @@
 package com.keyjolt.model;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Response object containing generated key information and download links
@@ -65,11 +66,15 @@ public class KeyResponse {
     }
     
     public List<FileInfo> getFiles() {
-        return files;
+        return Collections.unmodifiableList(files);
     }
     
     public void setFiles(List<FileInfo> files) {
-        this.files = files;
+        if (files == null) {
+            this.files = new ArrayList<>();
+        } else {
+            this.files = new ArrayList<>(files);
+        }
     }
     
     public String getError() {

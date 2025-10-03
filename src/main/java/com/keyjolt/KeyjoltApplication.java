@@ -30,11 +30,11 @@ public class KeyjoltApplication {
         // Add Bouncy Castle as security provider
         java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 
-        // Ensure log directory exists
+        // Ensure log directory exists relative to the application
         try {
-            Files.createDirectories(Paths.get("/home/zk/logs"));
+            Files.createDirectories(Paths.get(System.getProperty("user.dir"), "logs"));
         } catch (IOException e) {
-            System.err.println("Failed to create log directory: " + e.getMessage());
+            logger.error("Failed to create log directory", e);
         }
 
         SpringApplication.run(KeyjoltApplication.class, args);

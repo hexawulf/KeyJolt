@@ -248,6 +248,11 @@ public class KeyController {
                     message = "Key expiry must be a valid number";
                 }
                 break;
+
+            default:
+                isValid = false;
+                message = "Unsupported field";
+                break;
         }
         
         response.put("valid", isValid);

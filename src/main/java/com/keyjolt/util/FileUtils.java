@@ -8,6 +8,7 @@ import jakarta.annotation.PreDestroy;
 
 import java.io.*;
 import java.nio.file.*;
+import java.security.SecureRandom;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -19,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class FileUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(FileUtils.class);
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     
     @Value("${app.temp-dir:${java.io.tmpdir}/keyjolt}")
     private String tempDir;
@@ -133,9 +135,9 @@ public class FileUtils {
         // Overwrite with random data
         try (RandomAccessFile raf = new RandomAccessFile(file, "rws")) {
             byte[] data = new byte[1024];
-            new java.security.SecureRandom().nextBytes(data);
             
             for (long pos = 0; pos < length; pos += data.length) {
+                SECURE_RANDOM.nextBytes(data);
                 raf.seek(pos);
                 int writeLength = (int) Math.min(data.length, length - pos);
                 raf.write(data, 0, writeLength);
