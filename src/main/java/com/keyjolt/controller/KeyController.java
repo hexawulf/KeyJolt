@@ -26,7 +26,6 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -59,6 +58,9 @@ public class KeyController {
     
     @Value("${app.rate-limit.burst-capacity:5}")
     private int burstCapacity;
+
+    @Value("${app.trusted-proxy:false}")
+    private boolean trustedProxy;
     
     // Rate limiting buckets per IP
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
@@ -68,7 +70,7 @@ public class KeyController {
      */
     @GetMapping("/")
     public String index(Model model) {
-        logger.info("Serving index page");
+        logger.debug("Serving index page");
         model.addAttribute("keyRequest", new KeyRequest());
         model.addAttribute("encryptionStrengths", new int[]{2048, 3072, 4096});
         return "index";
@@ -107,6 +109,11 @@ public class KeyController {
         if (!request.hasValidEncryptionStrength()) {
             return ResponseEntity.badRequest()
                 .body(KeyResponse.error("Encryption strength must be 2048, 3072, or 4096."));
+        }
+
+        if (!request.hasValidPassword()) {
+            return ResponseEntity.badRequest()
+                .body(KeyResponse.error("Password must be at least 8 characters if provided."));
         }
 
         try {
@@ -267,9 +274,14 @@ public class KeyController {
                 }
                 break;
 
+            case "password":
+                if (value != null && !value.isEmpty() && value.length() < 8) {
+                    isValid = false;
+                    message = "Password must be at least 8 characters";
+                }
+                break;
+
             default:
-                isValid = false;
-                message = "Unsupported field";
                 break;
         }
         
@@ -310,19 +322,24 @@ public class KeyController {
     }
 
     /**
-     * Get client IP address from request
+     * Get client IP address from request.
+     * Only trusts proxy headers when app.trusted-proxy=true (i.e. behind a
+     * known reverse proxy like nginx). Otherwise falls back to remoteAddr
+     * so rate limiting cannot be trivially bypassed via spoofed headers.
      */
     private String getClientIpAddress(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
+        if (trustedProxy) {
+            String xForwardedFor = request.getHeader("X-Forwarded-For");
+            if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+                return xForwardedFor.split(",")[0].trim();
+            }
+
+            String xRealIp = request.getHeader("X-Real-IP");
+            if (xRealIp != null && !xRealIp.isEmpty()) {
+                return xRealIp;
+            }
         }
-        
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-        
+
         return request.getRemoteAddr();
     }
 }

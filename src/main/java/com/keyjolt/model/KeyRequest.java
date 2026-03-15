@@ -27,8 +27,10 @@ public class KeyRequest {
     @Max(value = 3650, message = "Maximum key expiry is 3650 days (10 years)")
     private Integer keyExpiry;
     
+    private static final int MIN_PASSWORD_LENGTH = 8;
+
     private boolean generateSshKey = false;
-    private String password; // Optional password for PGP private key
+    private String password;
     
     // Default constructor
     public KeyRequest() {}
@@ -94,6 +96,14 @@ public class KeyRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    /**
+     * Returns true if no password was given, or if the given password meets
+     * minimum strength requirements (>= 8 characters).
+     */
+    public boolean hasValidPassword() {
+        return password == null || password.isEmpty() || password.length() >= MIN_PASSWORD_LENGTH;
     }
 
     /**

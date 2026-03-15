@@ -28,7 +28,13 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } finally {
             long duration = System.currentTimeMillis() - start;
-            logger.info("{} {} {} {}ms", request.getMethod(), request.getRequestURI(), response.getStatus(), duration);
+            String uri = request.getRequestURI();
+            if (uri.startsWith("/css/") || uri.startsWith("/js/") || uri.startsWith("/images/")
+                    || uri.endsWith(".ico") || uri.endsWith(".png") || uri.endsWith(".webmanifest")) {
+                logger.debug("{} {} {} {}ms", request.getMethod(), uri, response.getStatus(), duration);
+            } else {
+                logger.info("{} {} {} {}ms", request.getMethod(), uri, response.getStatus(), duration);
+            }
         }
     }
 }

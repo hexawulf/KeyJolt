@@ -118,6 +118,11 @@ class KeyJoltApp {
                 input.addEventListener('blur', () => this.validateField(field, input.value));
             }
         });
+
+        const passwordInput = document.getElementById('password');
+        if (passwordInput) {
+            passwordInput.addEventListener('blur', () => this.validatePasswordField(passwordInput));
+        }
         
         // Prevent form submission while generating
         this.form.addEventListener('keydown', (e) => {
@@ -222,6 +227,15 @@ class KeyJoltApp {
         }
     }
     
+    validatePasswordField(input) {
+        const value = input.value;
+        if (value && value.length > 0 && value.length < 8) {
+            this.updateFieldValidation('password', false, 'Password must be at least 8 characters');
+        } else {
+            this.updateFieldValidation('password', true, '');
+        }
+    }
+
     async handleFormSubmit(e) {
         e.preventDefault();
         
@@ -250,7 +264,11 @@ class KeyJoltApp {
             
         } catch (error) {
             console.error('Generation error:', error);
-            this.showError('Network error. Please check your connection and try again.');
+            if (error instanceof TypeError && error.message === 'Failed to fetch') {
+                this.showError('Network error. Please check your connection and try again.');
+            } else {
+                this.showError('An unexpected error occurred. Please try again.');
+            }
         } finally {
             this.stopGeneration();
         }
@@ -278,6 +296,12 @@ class KeyJoltApp {
         const keyExpiry = parseInt(document.getElementById('keyExpiry').value);
         if (isNaN(keyExpiry) || keyExpiry < 0 || keyExpiry > 3650) {
             this.updateFieldValidation('keyExpiry', false, 'Key expiry must be between 0 and 3650 days');
+            isValid = false;
+        }
+
+        const password = document.getElementById('password') ? document.getElementById('password').value : '';
+        if (password.length > 0 && password.length < 8) {
+            this.updateFieldValidation('password', false, 'Password must be at least 8 characters');
             isValid = false;
         }
         
@@ -310,14 +334,19 @@ class KeyJoltApp {
             },
             body: JSON.stringify(formData)
         });
-        
-        if (!response.ok) {
-            if (response.status === 429) {
-                throw new Error('Rate limit exceeded. Please wait before generating more keys.');
-            }
-            throw new Error(`HTTP error! status: ${response.status}`);
+
+        if (response.status === 429) {
+            return { success: false, error: 'Rate limit exceeded. Please wait before generating more keys.' };
         }
-        
+
+        if (!response.ok) {
+            try {
+                return await response.json();
+            } catch (_) {
+                return { success: false, error: 'Server error. Please try again.' };
+            }
+        }
+
         return await response.json();
     }
     

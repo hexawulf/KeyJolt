@@ -23,11 +23,17 @@ import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Date;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Service for generating PGP key pairs using Bouncy Castle
  */
 @Service
 public class PgpKeyService {
+
+    private static final Logger logger = LoggerFactory.getLogger(PgpKeyService.class);
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     
     @Autowired
     private FileUtils fileUtils;
@@ -55,10 +61,10 @@ public class PgpKeyService {
         // Generate RSA key pair
         RSAKeyPairGenerator generator = new RSAKeyPairGenerator();
         generator.init(new RSAKeyGenerationParameters(
-            BigInteger.valueOf(65537), // public exponent
-            new SecureRandom(),
+            BigInteger.valueOf(65537),
+            SECURE_RANDOM,
             request.getEncryptionStrength(),
-            80 // certainty for prime generation
+            80
         ));
         
         org.bouncycastle.crypto.AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
