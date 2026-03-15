@@ -126,9 +126,8 @@ public class PgpKeyService {
         // Get key ID
         String keyId = Long.toHexString(publicKeyRing.getPublicKey().getKeyID()).toUpperCase();
         
-        // Export keys to armored format
-        String publicKeyArmored = exportPublicKey(publicKeyRing);
-        String privateKeyArmored = exportPrivateKey(secretKeyRing);
+        String publicKeyArmored = exportArmored(publicKeyRing);
+        String privateKeyArmored = exportArmored(secretKeyRing);
         
         // Create filenames
         String baseFilename = String.format("%s_%s", 
@@ -145,33 +144,12 @@ public class PgpKeyService {
         return new PgpKeyPair(keyId, publicKeyFile, privateKeyFile, publicKeyArmored, privateKeyArmored);
     }
     
-    /**
-     * Export public key to armored format
-     */
-    private String exportPublicKey(PGPPublicKeyRing keyRing) throws IOException {
+    private String exportArmored(PGPKeyRing keyRing) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ArmoredOutputStream armoredOut = new ArmoredOutputStream(out);
-        // Use the new comment format
-        armoredOut.setHeader("Comment", "Key created by KeyJolt – https://keyjolt.dev");
-        
-        keyRing.encode(armoredOut);
-        armoredOut.close();
-        
-        return out.toString("UTF-8");
-    }
-    
-    /**
-     * Export private key to armored format
-     */
-    private String exportPrivateKey(PGPSecretKeyRing keyRing) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ArmoredOutputStream armoredOut = new ArmoredOutputStream(out);
-        // Use the new comment format
-        armoredOut.setHeader("Comment", "Key created by KeyJolt – https://keyjolt.dev");
-        
-        keyRing.encode(armoredOut);
-        armoredOut.close();
-        
+        try (ArmoredOutputStream armoredOut = new ArmoredOutputStream(out)) {
+            armoredOut.setHeader("Comment", "Key created by KeyJolt \u2013 https://keyjolt.dev");
+            keyRing.encode(armoredOut);
+        }
         return out.toString("UTF-8");
     }
     

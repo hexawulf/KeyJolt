@@ -24,40 +24,30 @@ public class SshKeyService {
      */
     public SshKeyPair generateKeyPair(KeyRequest request) throws Exception {
         JSch jsch = new JSch();
-        
-        // Generate RSA key pair
         KeyPair keyPair = KeyPair.genKeyPair(jsch, KeyPair.RSA, request.getEncryptionStrength());
-        
-        // Set comment for public key
-        String comment = String.format("%s@%s", request.getName(), request.getEmail());
-        keyPair.setPublicKeyComment(comment);
-        
-        // Export public key
-        ByteArrayOutputStream publicKeyOut = new ByteArrayOutputStream();
-        keyPair.writePublicKey(publicKeyOut, comment);
-        String publicKeyContent = publicKeyOut.toString("UTF-8");
-        
-        // Export private key (OpenSSH format)
-        ByteArrayOutputStream privateKeyOut = new ByteArrayOutputStream();
-        keyPair.writePrivateKey(privateKeyOut);
-        String privateKeyContent = privateKeyOut.toString("UTF-8");
-        
-        // Create filenames
-        String baseFilename = String.format("%s_%s", 
-            request.getSanitizedEmail(), 
-            request.getSanitizedName());
-        
-        String publicKeyFilename = String.format("%s_ssh_pub.key", baseFilename);
-        String privateKeyFilename = String.format("%s_ssh_priv.key", baseFilename);
-        
-        // Write files
-        File publicKeyFile = fileUtils.writeToTempFile(publicKeyFilename, publicKeyContent);
-        File privateKeyFile = fileUtils.writeToTempFile(privateKeyFilename, privateKeyContent);
-        
-        // Clean up JSch resources
-        keyPair.dispose();
-        
-        return new SshKeyPair(publicKeyFile, privateKeyFile, publicKeyContent, privateKeyContent);
+        try {
+            String comment = String.format("%s@%s", request.getName(), request.getEmail());
+            keyPair.setPublicKeyComment(comment);
+
+            ByteArrayOutputStream publicKeyOut = new ByteArrayOutputStream();
+            keyPair.writePublicKey(publicKeyOut, comment);
+            String publicKeyContent = publicKeyOut.toString("UTF-8");
+
+            ByteArrayOutputStream privateKeyOut = new ByteArrayOutputStream();
+            keyPair.writePrivateKey(privateKeyOut);
+            String privateKeyContent = privateKeyOut.toString("UTF-8");
+
+            String baseFilename = String.format("%s_%s",
+                request.getSanitizedEmail(),
+                request.getSanitizedName());
+
+            File publicKeyFile = fileUtils.writeToTempFile(baseFilename + "_ssh_pub.key", publicKeyContent);
+            File privateKeyFile = fileUtils.writeToTempFile(baseFilename + "_ssh_priv.key", privateKeyContent);
+
+            return new SshKeyPair(publicKeyFile, privateKeyFile, publicKeyContent, privateKeyContent);
+        } finally {
+            keyPair.dispose();
+        }
     }
     
     /**

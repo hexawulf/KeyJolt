@@ -29,9 +29,13 @@ import org.springframework.web.bind.annotation.*;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.springframework.scheduling.annotation.Scheduled;
 
 /**
  * Main controller for handling key generation requests and file downloads
@@ -80,7 +84,7 @@ public class KeyController {
             BindingResult bindingResult,
             HttpServletRequest httpRequest) {
 
-        logger.info("Received key generation request from {}", getClientIpAddress(httpRequest));
+        logger.info("Key generation request from {}", getClientIpAddress(httpRequest));
 
         // Check rate limiting
         String clientIp = getClientIpAddress(httpRequest);
@@ -100,6 +104,11 @@ public class KeyController {
                 .body(KeyResponse.error("Validation failed: " + errors.toString()));
         }
         
+        if (!request.hasValidEncryptionStrength()) {
+            return ResponseEntity.badRequest()
+                .body(KeyResponse.error("Encryption strength must be 2048, 3072, or 4096."));
+        }
+
         try {
             List<KeyResponse.FileInfo> files = new ArrayList<>();
             
@@ -140,7 +149,7 @@ public class KeyController {
                 ));
             }
 
-            logger.info("Generated keys for {}", request.getEmail());
+            logger.info("Keys generated successfully (strength={})", request.getEncryptionStrength());
 
             return ResponseEntity.ok(KeyResponse.success(
                 "Keys generated successfully! Download them below.",
@@ -149,9 +158,9 @@ public class KeyController {
             ));
             
         } catch (Exception e) {
-            logger.error("Failed to generate keys: {}", e.getMessage(), e);
+            logger.error("Failed to generate keys", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(KeyResponse.error("Failed to generate keys: " + e.getMessage()));
+                .body(KeyResponse.error("Key generation failed. Please try again."));
         }
     }
     
@@ -161,14 +170,22 @@ public class KeyController {
     @GetMapping("/download/{filename}")
     public ResponseEntity<?> downloadFile(@PathVariable String filename) {
         try {
-            // Basic path sanitization
-            if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+            if (filename.contains("..") || filename.contains("/") || filename.contains("\\")
+                    || filename.contains("\0")) {
                 return ResponseEntity.badRequest()
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(Map.of("error", "Invalid filename."));
             }
 
-            java.nio.file.Path filePath = java.nio.file.Path.of(fileUtils.getTempDir()).resolve(filename).normalize();
+            java.nio.file.Path tempBase = java.nio.file.Path.of(fileUtils.getTempDir()).toAbsolutePath().normalize();
+            java.nio.file.Path filePath = tempBase.resolve(filename).normalize();
+
+            if (!filePath.startsWith(tempBase)) {
+                logger.warn("Path traversal attempt blocked: {}", filename);
+                return ResponseEntity.badRequest()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("error", "Invalid filename."));
+            }
 
             if (!java.nio.file.Files.exists(filePath)) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -187,13 +204,14 @@ public class KeyController {
             return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"" + fileResource.getFilename() + "\"")
+                        "attachment; filename=\"" + filename + "\"")
                 .body(fileResource);
 
         } catch (Exception e) {
+            logger.error("Download failed for file: {}", filename, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("error", "Download failed: " + e.getMessage()));
+                .body(Map.of("error", "Download failed."));
         }
     }
     /**
@@ -205,7 +223,7 @@ public class KeyController {
             @RequestParam String field,
             @RequestParam String value) {
         
-        Map<String, Object> response = new ConcurrentHashMap<>();
+        Map<String, Object> response = new HashMap<>();
         boolean isValid = true;
         String message = "";
         
@@ -275,6 +293,22 @@ public class KeyController {
         });
     }
     
+    @Scheduled(fixedRate = 3600000)
+    public void evictStaleBuckets() {
+        int before = buckets.size();
+        Iterator<Map.Entry<String, Bucket>> it = buckets.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, Bucket> entry = it.next();
+            if (entry.getValue().getAvailableTokens() >= requestsPerHour) {
+                it.remove();
+            }
+        }
+        int removed = before - buckets.size();
+        if (removed > 0) {
+            logger.debug("Evicted {} stale rate-limit buckets", removed);
+        }
+    }
+
     /**
      * Get client IP address from request
      */

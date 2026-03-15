@@ -438,32 +438,31 @@ class KeyJoltApp {
     }
 
     async downloadFile(downloadUrl, filename) {
-        fetch(downloadUrl)
-            .then(response => {
-                if (!response.ok) {
-                    const contentType = response.headers.get('content-type') || '';
+        try {
+            const response = await fetch(downloadUrl);
 
-                    if (contentType.includes('application/json')) {
-                        return response.json().then(data => {
-                            console.error('Download failed:', data.error || 'Unknown error.');
-                        });
-                    }
-
-                    throw new Error(`Download failed with status ${response.status}`);
+            if (!response.ok) {
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    const data = await response.json();
+                    console.error('Download failed:', data.error || 'Unknown error.');
+                    return;
                 }
+                throw new Error(`Download failed with status ${response.status}`);
+            }
 
-                return response.blob().then(blob => {
-                    const link = document.createElement('a');
-                    link.href = window.URL.createObjectURL(blob);
-                    link.download = filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                });
-            })
-            .catch(error => {
-                console.error('Unexpected fetch error:', error.message);
-            });
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Download error:', error.message);
+        }
     }
 
     initModals() {
@@ -541,17 +540,6 @@ window.resetForm = function() {
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     window.keyJoltApp = new KeyJoltApp();
-});
-
-// Handle page visibility changes to clean up resources
-document.addEventListener('visibilitychange', function() {
-    if (document.hidden) {
-        // Page is hidden, clean up any ongoing operations
-        const app = window.keyJoltApp;
-        if (app && app.isGenerating) {
-            // Generation should stop if user navigates away
-        }
-    }
 });
 
 // Handle beforeunload to warn about ongoing operations

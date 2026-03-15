@@ -1,6 +1,7 @@
 package com.keyjolt.model;
 
 import jakarta.validation.constraints.*;
+import java.util.Set;
 
 /**
  * Data Transfer Object for key generation requests
@@ -16,9 +17,9 @@ public class KeyRequest {
     @Email(message = "Please enter a valid email address")
     private String email;
     
+    private static final Set<Integer> ALLOWED_STRENGTHS = Set.of(2048, 3072, 4096);
+
     @NotNull(message = "Encryption strength is required")
-    @Min(value = 2048, message = "Minimum encryption strength is 2048 bits")
-    @Max(value = 4096, message = "Maximum encryption strength is 4096 bits")
     private Integer encryptionStrength;
     
     @NotNull(message = "Key expiry is required")
@@ -65,6 +66,10 @@ public class KeyRequest {
     
     public void setEncryptionStrength(Integer encryptionStrength) {
         this.encryptionStrength = encryptionStrength;
+    }
+
+    public boolean hasValidEncryptionStrength() {
+        return encryptionStrength != null && ALLOWED_STRENGTHS.contains(encryptionStrength);
     }
     
     public Integer getKeyExpiry() {

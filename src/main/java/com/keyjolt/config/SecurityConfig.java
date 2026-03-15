@@ -6,12 +6,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -20,30 +14,18 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-@Configuration // Indicates that this class contains Spring configuration
-@EnableWebSecurity // Enables Spring Security's web security support
+@Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
-    // Bean for password encoding.
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    // Bean for configuring the security filter chain.
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // Enable CORS with custom configuration
             .cors(Customizer.withDefaults())
-
-            // Disable CSRF (Cross-Site Request Forgery) protection.
             .csrf(csrf -> csrf.disable())
-
-            // Configure authorization rules for HTTP requests.
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(
-                    "/", "/generate", "/api/generate", "/index",
+                    "/", "/api/generate", "/api/validate",
                     "/css/**", "/js/**", "/images/**",
                     "/favicon.ico", "/favicon-16x16.png", "/favicon-32x32.png",
                     "/apple-touch-icon.png", "/android-chrome-*.png",
@@ -53,19 +35,15 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/wp-admin/**", "/wordpress/**", "/wp-login.php"
                 ).denyAll()
-                .anyRequest().authenticated()
+                .anyRequest().denyAll()
             )
 
-            // Disable form-based login and HTTP Basic authentication
             .formLogin(formLogin -> formLogin.disable())
             .httpBasic(httpBasic -> httpBasic.disable())
-
-            // Configure session management to be stateless.
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
 
-            // Add hardened security headers
             .headers(headers -> headers
                 .httpStrictTransportSecurity(hsts -> hsts
                     .includeSubDomains(true)
@@ -80,19 +58,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Bean for an in-memory UserDetailsService.
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails adminUser = User.builder()
-            .username("admin")
-            .password(passwordEncoder().encode("admin123")) // Password must be encoded
-            .roles("ADMIN") // Roles are automatically prefixed with "ROLE_"
-            .build();
-
-        return new InMemoryUserDetailsManager(adminUser);
-    }
-
-    // Bean for CORS configuration
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();

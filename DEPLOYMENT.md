@@ -14,7 +14,7 @@ Set these environment variables for production:
 
 ```bash
 # Server Configuration
-SERVER_PORT=5000
+SERVER_PORT=5005
 SERVER_ADDRESS=0.0.0.0
 
 # Rate Limiting
@@ -50,7 +50,7 @@ FROM openjdk:17-jre-slim
 WORKDIR /app
 COPY target/keyjolt-1.0.0.jar app.jar
 
-EXPOSE 5000
+EXPOSE 5005
 
 CMD ["java", "-jar", "app.jar"]
 ```
@@ -58,7 +58,7 @@ CMD ["java", "-jar", "app.jar"]
 Build and run:
 ```bash
 docker build -t keyjolt .
-docker run -p 5000:5000 \
+docker run -p 5005:5005 \
   -e SPRING_PROFILES_ACTIVE=production \
   keyjolt
 ```
@@ -109,7 +109,7 @@ server {
     ssl_certificate_key /path/to/private.key;
     
     location / {
-        proxy_pass http://localhost:5000;
+        proxy_pass http://localhost:5005;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -129,8 +129,8 @@ server {
     SSLCertificateKeyFile /path/to/private.key
     
     ProxyPreserveHost On
-    ProxyPass / http://localhost:5000/
-    ProxyPassReverse / http://localhost:5000/
+    ProxyPass / http://localhost:5005/
+    ProxyPassReverse / http://localhost:5005/
 </VirtualHost>
 ```
 
@@ -146,9 +146,9 @@ sudo logrotate -d /etc/logrotate.d/keyjolt
 ```
 
 ### Health Checks
-KeyJolt includes Spring Boot Actuator endpoints:
-- `/actuator/health` - Application health status
-- `/actuator/metrics` - Application metrics
+KeyJolt does not ship Spring Boot Actuator by default.
+Add `spring-boot-starter-actuator` to `pom.xml` if you need
+`/actuator/health` or `/actuator/metrics` endpoints.
 
 ## Security Checklist
 
@@ -178,7 +178,7 @@ Consider adding database connection pooling and caching for enhanced performance
 
 1. **Port Already in Use**
    ```bash
-   sudo lsof -i :5000
+   sudo lsof -i :5005
    sudo kill -9 PID
    ```
 

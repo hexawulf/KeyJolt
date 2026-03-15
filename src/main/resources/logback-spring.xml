@@ -1,5 +1,5 @@
 <configuration>
-    <property name="LOG_DIR" value="/home/zk/logs"/>
+    <property name="LOG_DIR" value="${LOG_DIR:-logs}"/>
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_DIR}/keyjolt.log</file>

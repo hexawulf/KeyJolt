@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 import java.io.*;
@@ -28,79 +29,37 @@ public class FileUtils {
     @Value("${app.key-cleanup-delay:300000}")
     private long cleanupDelay; // 5 minutes default
     
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     
-    /**
-     * Initialize temp directory
-     */
+    @PostConstruct
     public void initTempDirectory() {
         try {
             Path tempPath = Paths.get(tempDir);
             if (!Files.exists(tempPath)) {
                 Files.createDirectories(tempPath);
             }
+            logger.info("Temp directory ready: {}", tempPath.toAbsolutePath());
         } catch (IOException e) {
             throw new RuntimeException("Failed to create temp directory: " + tempDir, e);
         }
     }
-    
-    /**
-     * Write content to a temporary file
-     */
-    public File writeToTempFile(String filename, String content) throws IOException {
-        initTempDirectory();
-        
-        Path filePath = Paths.get(tempDir, filename);
-        Files.write(filePath, content.getBytes("UTF-8"));
-        
-        File file = filePath.toFile();
-        long creationTime = System.currentTimeMillis();
-        long deletionTime = creationTime + cleanupDelay;
 
-        logger.info("File written to: {}. Filename: {}. Created: {}. Scheduled deletion: {}",
-                    filePath.toAbsolutePath(), filename, new java.util.Date(creationTime), new java.util.Date(deletionTime));
-        
-        // Schedule automatic deletion
-        scheduleFileDeletion(file, filePath.toAbsolutePath().toString()); // Pass path for logging
-        
-        return file;
+    public File writeToTempFile(String filename, String content) throws IOException {
+        return writeToTempFile(filename, content.getBytes("UTF-8"));
     }
-    
-    /**
-     * Write bytes to a temporary file
-     */
+
     public File writeToTempFile(String filename, byte[] content) throws IOException {
-        initTempDirectory();
-        
         Path filePath = Paths.get(tempDir, filename);
         Files.write(filePath, content);
-        
-        File file = filePath.toFile();
-        long creationTime = System.currentTimeMillis();
-        long deletionTime = creationTime + cleanupDelay;
 
-        logger.info("File written to: {}. Filename: {}. Created: {}. Scheduled deletion: {}",
-                    filePath.toAbsolutePath(), filename, new java.util.Date(creationTime), new java.util.Date(deletionTime));
-        
-        // Schedule automatic deletion
-        scheduleFileDeletion(file, filePath.toAbsolutePath().toString()); // Pass path for logging
-        
+        File file = filePath.toFile();
+        String absPath = filePath.toAbsolutePath().toString();
+        logger.info("File written: {} (scheduled deletion in {}ms)", absPath, cleanupDelay);
+
+        scheduleFileDeletion(file, absPath);
         return file;
     }
     
-    /**
-     * Read file content as string
-     */
-    public String readFileAsString(File file) throws IOException {
-        return new String(Files.readAllBytes(file.toPath()), "UTF-8");
-    }
-    
-    /**
-     * Read file content as bytes
-     */
-    public byte[] readFileAsBytes(File file) throws IOException {
-        return Files.readAllBytes(file.toPath());
-    }
     
     /**
      * Schedule file deletion after delay
@@ -159,22 +118,6 @@ public class FileUtils {
         return file.exists() ? file.length() : 0;
     }
     
-    /**
-     * Check if file exists in temp directory
-     */
-    public boolean fileExists(String filename) {
-        Path filePath = Paths.get(tempDir, filename);
-        return Files.exists(filePath);
-    }
-    
-    /**
-     * Get file from temp directory
-     */
-    public File getFile(String filename) {
-        Path filePath = Paths.get(tempDir, filename);
-        return filePath.toFile();
-    }
-
     /**
      * Get the configured temporary directory path
      */

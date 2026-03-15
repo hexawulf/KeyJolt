@@ -95,7 +95,7 @@
 
 4. **Access the application**
    ```
-   http://localhost:5000
+   http://localhost:5005
    ```
 
 ### Configuration
@@ -103,8 +103,8 @@
 The application can be configured via `application.properties`:
 
 ```properties
-# Server Configuration
-server.port=5000
+# Server Configuration (uses PORT env var if set, else 5005)
+server.port=${PORT:5005}
 server.address=0.0.0.0
 
 # Rate Limiting
