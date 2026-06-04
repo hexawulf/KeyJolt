@@ -50,6 +50,7 @@ public class FileUtils {
 
     public File writeToTempFile(String filename, byte[] content) throws IOException {
         Path filePath = Paths.get(tempDir, filename);
+        Files.createDirectories(filePath.getParent());
         Files.write(filePath, content);
 
         File file = filePath.toFile();
