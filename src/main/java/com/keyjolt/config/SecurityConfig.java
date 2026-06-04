@@ -41,6 +41,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/wp-admin/**", "/wordpress/**", "/wp-login.php"
                 ).denyAll()
+                .requestMatchers("/healthz").permitAll()
                 .anyRequest().denyAll()
             )
 
