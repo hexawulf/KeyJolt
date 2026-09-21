@@ -85,3 +85,8 @@ replit.nixtarget/
 *.jar
 *.class
 attached_assets/
+
+# Editor/tooling backup snapshots (e.g. SecurityConfig.java.bak.20260604-2205)
+# Bare *.bak does not match a dated suffix — see the mailserver leak, 2026-09-20.
+*.bak
+*.bak.*
