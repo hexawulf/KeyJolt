@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'keyjolt',
-      script: 'java',
+      script: '/usr/lib/jvm/java-17-openjdk-arm64/bin/java',
       args: '-jar /home/zk/projects/KeyJolt/target/keyjolt-1.1.0.jar',
       interpreter: 'none',
       cwd: '/home/zk/projects/KeyJolt',
