@@ -14,6 +14,8 @@ public class KeyResponse {
     private String keyId;
     private List<FileInfo> files;
     private String error;
+    private String fingerprint; // SSH-only: SHA256 fingerprint of the public key
+    private String publicKey;   // SSH-only: one-line OpenSSH public key (for copy/paste)
     
     public KeyResponse() {
         this.files = new ArrayList<>();
@@ -83,6 +85,22 @@ public class KeyResponse {
     
     public void setError(String error) {
         this.error = error;
+    }
+    
+    public String getFingerprint() {
+        return fingerprint;
+    }
+    
+    public void setFingerprint(String fingerprint) {
+        this.fingerprint = fingerprint;
+    }
+    
+    public String getPublicKey() {
+        return publicKey;
+    }
+    
+    public void setPublicKey(String publicKey) {
+        this.publicKey = publicKey;
     }
     
     /**

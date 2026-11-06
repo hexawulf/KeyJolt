@@ -2,6 +2,7 @@ package com.keyjolt.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.keyjolt.model.KeyRequest;
+import com.keyjolt.model.SshKeyRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -147,7 +148,7 @@ class KeyControllerTest {
 
     @Test
     void downloadRejects404ForMissingFile() throws Exception {
-        mockMvc.perform(get("/download/nonexistent_file.asc"))
+        mockMvc.perform(get("/download/0123456789abcdef0123456789abcdef/nonexistent_file.asc"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("File not found."));
     }
@@ -162,5 +163,111 @@ class KeyControllerTest {
     void unknownPathReturnsDenied() throws Exception {
         mockMvc.perform(get("/admin/secret"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void downloadRejectsInvalidToken() throws Exception {
+        mockMvc.perform(get("/download/not-a-token/id_ed25519"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Invalid filename."));
+    }
+
+    @Test
+    void generateSshOnlyEd25519ReturnsTwoFilesAndPublicKey() throws Exception {
+        SshKeyRequest request = new SshKeyRequest("ed25519", "zk@laptop", null);
+
+        mockMvc.perform(post("/api/generate/ssh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.files.length()").value(2))
+                .andExpect(jsonPath("$.files[0].type").value("ssh_public"))
+                .andExpect(jsonPath("$.files[0].filename").value("id_ed25519.pub"))
+                .andExpect(jsonPath("$.files[1].type").value("ssh_private"))
+                .andExpect(jsonPath("$.files[1].filename").value("id_ed25519"))
+                .andExpect(jsonPath("$.publicKey").value(org.hamcrest.Matchers.startsWith("ssh-ed25519 ")))
+                .andExpect(jsonPath("$.publicKey").value(org.hamcrest.Matchers.endsWith(" zk@laptop")))
+                .andExpect(jsonPath("$.fingerprint").value(org.hamcrest.Matchers.startsWith("SHA256:")));
+    }
+
+    @Test
+    void generateSshOnlyDefaultsToEd25519WhenKeyTypeOmitted() throws Exception {
+        mockMvc.perform(post("/api/generate/ssh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.files[1].filename").value("id_ed25519"));
+    }
+
+    @Test
+    void generateSshOnlyRsaWithPassphrase() throws Exception {
+        SshKeyRequest request = new SshKeyRequest("rsa", "", "Secret123!");
+
+        mockMvc.perform(post("/api/generate/ssh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.files[1].filename").value("id_rsa"))
+                .andExpect(jsonPath("$.publicKey").value(org.hamcrest.Matchers.startsWith("ssh-rsa ")));
+    }
+
+    @Test
+    void generateSshOnlyRejectsUnknownKeyType() throws Exception {
+        SshKeyRequest request = new SshKeyRequest("dsa", null, null);
+
+        mockMvc.perform(post("/api/generate/ssh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false));
+    }
+
+    @Test
+    void generateSshOnlyRejectsShortPassphrase() throws Exception {
+        SshKeyRequest request = new SshKeyRequest("ed25519", null, "short");
+
+        mockMvc.perform(post("/api/generate/ssh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Passphrase must be at least 8 characters if provided."));
+    }
+
+    @Test
+    void generateSshOnlyRejectsCommentWithNewline() throws Exception {
+        SshKeyRequest request = new SshKeyRequest("ed25519", "zk\nssh-rsa AAAA evil", null);
+
+        mockMvc.perform(post("/api/generate/ssh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void sshOnlyPrivateKeyDownloadsWithNoStore() throws Exception {
+        String body = mockMvc.perform(post("/api/generate/ssh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"keyType\":\"ed25519\"}"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        String url = objectMapper.readTree(body).get("files").get(1).get("downloadUrl").asText();
+        org.junit.jupiter.api.Assertions.assertTrue(url.matches("^/download/[a-f0-9]{32}/id_ed25519$"), url);
+
+        mockMvc.perform(get(url))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=\"id_ed25519\""))
+                .andExpect(content().string(org.hamcrest.Matchers.startsWith("-----BEGIN OPENSSH PRIVATE KEY-----")));
+    }
+
+    @Test
+    void validateFieldRejectsBadComment() throws Exception {
+        mockMvc.perform(post("/api/validate")
+                        .param("field", "comment")
+                        .param("value", "bad;comment"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(false));
     }
 }

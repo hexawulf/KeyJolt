@@ -31,7 +31,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers(
-                    "/", "/api/generate", "/api/validate",
+                    "/", "/api/generate", "/api/generate/ssh", "/api/validate",
                     "/css/**", "/js/**", "/images/**",
                     "/favicon.ico", "/favicon-16x16.png", "/favicon-32x32.png",
                     "/apple-touch-icon.png", "/android-chrome-*.png",

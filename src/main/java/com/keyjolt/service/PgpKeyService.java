@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Date;
 
@@ -57,7 +58,7 @@ public class PgpKeyService {
     /**
      * Generate a PGP key pair based on the request parameters
      */
-    public PgpKeyPair generateKeyPair(KeyRequest request) throws Exception {
+    public PgpKeyPair generateKeyPair(KeyRequest request, String requestDir) throws Exception {
         // Generate RSA key pair
         RSAKeyPairGenerator generator = new RSAKeyPairGenerator();
         generator.init(new RSAKeyGenerationParameters(
@@ -144,8 +145,10 @@ public class PgpKeyService {
         String privateKeyFilename = String.format("%s_seckey_%s.asc", baseFilename, keyId);
         
         // Write files
-        File publicKeyFile = fileUtils.writeToTempFile(publicKeyFilename, publicKeyArmored);
-        File privateKeyFile = fileUtils.writeToTempFile(privateKeyFilename, privateKeyArmored);
+        File publicKeyFile = fileUtils.writeToTempFile(requestDir, publicKeyFilename,
+            publicKeyArmored.getBytes(StandardCharsets.UTF_8), false);
+        File privateKeyFile = fileUtils.writeToTempFile(requestDir, privateKeyFilename,
+            privateKeyArmored.getBytes(StandardCharsets.UTF_8), true);
         
         return new PgpKeyPair(keyId, publicKeyFile, privateKeyFile, publicKeyArmored, privateKeyArmored);
     }

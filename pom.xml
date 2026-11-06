@@ -14,7 +14,7 @@
     
     <groupId>com.keyjolt</groupId>
     <artifactId>keyjolt</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <name>KeyJolt PGP Key Generator</name>
     <description>Secure PGP and SSH key pair generator</description>
     
@@ -56,12 +56,11 @@
             <artifactId>bcprov-jdk18on</artifactId>
             <version>1.80</version>
         </dependency>
-        
-        <!-- JSch for SSH (maintained fork) -->
+        <!-- Apache MINA sshd-common: OpenSSH-format SSH keys (Ed25519/RSA, bcrypt-KDF passphrases) -->
         <dependency>
-            <groupId>com.github.mwiede</groupId>
-            <artifactId>jsch</artifactId>
-            <version>0.2.26</version>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-common</artifactId>
+            <version>2.20.1</version>
         </dependency>
         
         <!-- Rate Limiting -->
