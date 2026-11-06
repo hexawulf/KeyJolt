@@ -36,7 +36,7 @@ git clone https://github.com/hexawulf/KeyJolt.git
 cd KeyJolt
 mvn clean package -Dmaven.test.skip=true
 
-# The JAR file will be in target/keyjolt-1.0.0.jar
+# The JAR file will be in target/keyjolt-1.1.0.jar
 ```
 
 ## Platform-Specific Deployments
@@ -48,7 +48,7 @@ Create `Dockerfile`:
 FROM openjdk:17-jre-slim
 
 WORKDIR /app
-COPY target/keyjolt-1.0.0.jar app.jar
+COPY target/keyjolt-1.1.0.jar app.jar
 
 EXPOSE 5005
 
@@ -68,7 +68,7 @@ docker run -p 5005:5005 \
 #### Heroku
 1. Create `Procfile`:
    ```
-   web: java -jar target/keyjolt-1.0.0.jar
+   web: java -jar target/keyjolt-1.1.0.jar
    ```
 
 2. Deploy:
@@ -84,7 +84,7 @@ sudo yum update -y
 sudo yum install -y java-17-amazon-corretto
 
 # Run as service
-sudo java -jar keyjolt-1.0.0.jar
+sudo java -jar keyjolt-1.1.0.jar
 ```
 
 #### Digital Ocean
@@ -166,7 +166,7 @@ Add `spring-boot-starter-actuator` to `pom.xml` if you need
 ```bash
 java -Xms512m -Xmx1024m \
      -XX:+UseG1GC \
-     -jar keyjolt-1.0.0.jar
+     -jar keyjolt-1.1.0.jar
 ```
 
 ### Database (if added)

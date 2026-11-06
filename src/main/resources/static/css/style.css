@@ -904,3 +904,126 @@ select:focus {
     right: 15px;
   }
 }
+
+/* ===== v1.1.0: mode toggle + SSH-only results ===== */
+.mode-toggle {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--gray-100);
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-md);
+}
+
+.mode-toggle input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.mode-toggle label {
+    flex: 1;
+    text-align: center;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mode-toggle input:checked + label {
+    background: var(--white);
+    color: var(--gray-900);
+    box-shadow: var(--shadow-sm);
+}
+
+.mode-toggle input:focus-visible + label {
+    outline: 2px solid var(--twitter-blue);
+    outline-offset: 2px;
+}
+
+.mode-fields {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.mode-fields[hidden],
+.ssh-summary[hidden] {
+    display: none !important;
+}
+
+.ssh-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.ssh-fingerprint {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.ssh-summary-label {
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.ssh-summary code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    color: var(--gray-900);
+    word-break: break-all;
+}
+
+.ssh-pubkey {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: var(--gray-50);
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-md);
+}
+
+.ssh-pubkey code {
+    flex: 1;
+    min-width: 0;
+    max-height: 7.5em;
+    overflow-y: auto;
+}
+
+.btn-copy {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--white);
+    color: var(--twitter-blue);
+    border: 2px solid var(--twitter-blue);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.btn-copy:hover {
+    background: var(--twitter-blue);
+    color: var(--white);
+}
+
+.btn-copy .btn-icon {
+    width: 14px;
+    height: 14px;
+}

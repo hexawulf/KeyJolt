@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KeyJolt - Secure PGP Key Generator</title>
+    <title>KeyJolt - Secure PGP &amp; SSH Key Generator</title>
     
     <!-- Favicon and App Icons -->
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -48,7 +48,7 @@
                     <div class="features">
                         <div class="feature">
                             <i data-feather="lock" class="feature-icon"></i>
-                            <span>RSA encryption up to 4096 bits</span>
+                            <span>RSA up to 4096 bits or Ed25519</span>
                         </div>
                         <div class="feature">
                             <i data-feather="clock" class="feature-icon"></i>
@@ -71,7 +71,16 @@
                 <div class="form-card">
                     <h2>Generate Your Keys</h2>
                     
-                    <form id="keyGenerationForm" class="key-form">
+                    <form id="keyGenerationForm" class="key-form" novalidate>
+                        <!-- Mode Toggle -->
+                        <div class="mode-toggle" role="radiogroup" aria-label="What to generate">
+                            <input type="radio" name="mode" id="modePgp" value="pgp" checked>
+                            <label for="modePgp">PGP + SSH</label>
+                            <input type="radio" name="mode" id="modeSsh" value="ssh">
+                            <label for="modeSsh">SSH only</label>
+                        </div>
+
+                        <fieldset class="mode-fields" id="pgpFields">
                         <!-- Name Field -->
                         <div class="form-group">
                             <label for="name" class="form-label">
@@ -158,6 +167,44 @@
                             </div>
                             <div class="field-help">Useful for server access and Git authentication.</div>
                         </div>
+                        </fieldset>
+
+                        <!-- SSH-only Fields -->
+                        <fieldset class="mode-fields" id="sshFields" hidden disabled>
+                            <div class="form-group">
+                                <label for="sshKeyType" class="form-label">
+                                    <i data-feather="terminal" class="label-icon"></i>
+                                    Key Type
+                                </label>
+                                <select id="sshKeyType" name="sshKeyType" class="form-select">
+                                    <option value="ed25519" selected>Ed25519 (Recommended)</option>
+                                    <option value="rsa">RSA 4096 (legacy systems)</option>
+                                </select>
+                                <div class="field-help">Ed25519 is short, fast and supported by all modern OpenSSH servers and Git hosts.</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="sshComment" class="form-label">
+                                    <i data-feather="tag" class="label-icon"></i>
+                                    Comment (Optional)
+                                </label>
+                                <input type="text" id="sshComment" name="sshComment" class="form-input"
+                                       placeholder="e.g. you@laptop" maxlength="100" autocomplete="off">
+                                <div class="field-help">Shown at the end of the public key to help you identify it.</div>
+                                <div class="field-error" id="sshCommentError"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="sshPassphrase" class="form-label">
+                                    <i data-feather="lock" class="label-icon"></i>
+                                    Passphrase (Optional)
+                                </label>
+                                <input type="password" id="sshPassphrase" name="sshPassphrase" class="form-input"
+                                       placeholder="At least 8 characters (optional)" maxlength="256" autocomplete="new-password">
+                                <div class="field-help">Encrypts the private key. Leave blank for no passphrase.</div>
+                                <div class="field-error" id="sshPassphraseError"></div>
+                            </div>
+                        </fieldset>
 
                         <!-- Generate Button -->
                         <button type="submit" class="btn-generate" id="generateBtn">
@@ -174,6 +221,21 @@
                 <div class="results-card">
                     <h2>Your Keys Are Ready!</h2>
                     <p class="success-message" id="successMessage"></p>
+
+                    <div class="ssh-summary" id="sshSummary" hidden>
+                        <div class="ssh-fingerprint">
+                            <span class="ssh-summary-label">Fingerprint</span>
+                            <code id="sshFingerprint"></code>
+                        </div>
+                        <div class="ssh-pubkey">
+                            <code id="sshPublicKey"></code>
+                            <button type="button" class="btn-copy" id="copyPublicKey" aria-label="Copy public key">
+                                <i data-feather="copy" class="btn-icon"></i>
+                                <span class="btn-copy-text">Copy</span>
+                            </button>
+                        </div>
+                        <p class="field-help">After download: <code>chmod 600</code> the private key, move both files to <code>~/.ssh/</code>, then add the public key to <code>authorized_keys</code> or your Git host.</p>
+                    </div>
                     
                     <div class="download-grid" id="downloadGrid">
                         <!-- Download links will be populated here -->
@@ -238,7 +300,7 @@
                         <li><strong>Framework:</strong> Spring Boot 3.2.0</li>
                         <li><strong>Language:</strong> Java 17</li>
                         <li><strong>Security:</strong> Spring Security with custom headers</li>
-                        <li><strong>Cryptography:</strong> Bouncy Castle (PGP), JSch (SSH)</li>
+                        <li><strong>Cryptography:</strong> Bouncy Castle (PGP), Apache MINA sshd (SSH)</li>
                         <li><strong>Rate Limiting:</strong> Bucket4j</li>
                         <li><strong>Build Tool:</strong> Maven</li>
                     </ul>
@@ -268,11 +330,11 @@
                 </div>
                 <div class="about-section">
                     <h3><i data-feather="info" class="about-icon"></i>Version</h3>
-                    <p>1.0.0</p>
+                    <p>1.1.0</p>
                 </div>
                 <div class="about-section">
                     <h3><i data-feather="calendar" class="about-icon"></i>Date</h3>
-                    <p>June 2025</p>
+                    <p>November 2026</p>
                 </div>
             </div>
         </div>

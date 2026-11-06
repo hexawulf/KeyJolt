@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'keyjolt',
       script: 'java',
-      args: '-jar /home/zk/projects/KeyJolt/target/keyjolt-1.0.0.jar',
+      args: '-jar /home/zk/projects/KeyJolt/target/keyjolt-1.1.0.jar',
       interpreter: 'none',
       cwd: '/home/zk/projects/KeyJolt',
       env: {

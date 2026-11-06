@@ -9,6 +9,15 @@ class KeyJoltApp {
         this.successMessage = document.getElementById('successMessage');
         this.errorMessage = document.getElementById('errorMessage');
 
+        // Mode (PGP + SSH vs SSH only)
+        this.pgpFields = document.getElementById('pgpFields');
+        this.sshFields = document.getElementById('sshFields');
+        this.btnText = this.generateBtn.querySelector('.btn-text');
+        this.sshSummary = document.getElementById('sshSummary');
+        this.sshFingerprint = document.getElementById('sshFingerprint');
+        this.sshPublicKey = document.getElementById('sshPublicKey');
+        this.copyPublicKeyBtn = document.getElementById('copyPublicKey');
+
         // Modal elements
         this.aboutModal = document.getElementById('aboutModal');
         this.securityModal = document.getElementById('security-modal');
@@ -45,6 +54,103 @@ class KeyJoltApp {
 
         // Setup Modals
         this.initModals();
+
+        // Setup PGP / SSH-only mode toggle
+        this.setupModeToggle();
+    }
+
+    getMode() {
+        const checked = this.form.querySelector('input[name="mode"]:checked');
+        return checked ? checked.value : 'pgp';
+    }
+
+    setupModeToggle() {
+        this.form.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                this.applyMode();
+                this.hideResults();
+                // Keep a shareable link: keyjolt.dev/#ssh opens SSH-only mode
+                try {
+                    history.replaceState(null, '', this.getMode() === 'ssh' ? '#ssh' : window.location.pathname);
+                } catch (_) { /* ignore */ }
+            });
+        });
+
+        if (window.location.hash === '#ssh') {
+            document.getElementById('modeSsh').checked = true;
+        }
+        this.applyMode();
+
+        const comment = document.getElementById('sshComment');
+        if (comment) {
+            comment.addEventListener('input', () => this.validateSshComment());
+            comment.addEventListener('blur', () => this.validateSshComment());
+        }
+        const passphrase = document.getElementById('sshPassphrase');
+        if (passphrase) {
+            passphrase.addEventListener('blur', () => this.validateSshPassphrase());
+        }
+
+        if (this.copyPublicKeyBtn) {
+            this.copyPublicKeyBtn.addEventListener('click', () => this.copyPublicKey());
+        }
+    }
+
+    applyMode() {
+        const ssh = this.getMode() === 'ssh';
+        // A disabled fieldset is excluded from validation and submission
+        this.pgpFields.hidden = ssh;
+        this.pgpFields.disabled = ssh;
+        this.sshFields.hidden = !ssh;
+        this.sshFields.disabled = !ssh;
+        if (this.btnText) {
+            this.btnText.textContent = ssh ? 'Generate SSH Key' : 'Generate Keys';
+        }
+    }
+
+    validateSshComment() {
+        const value = document.getElementById('sshComment').value;
+        if (value.length > 100) {
+            this.updateFieldValidation('sshComment', false, 'Comment must not exceed 100 characters');
+            return false;
+        }
+        if (!/^[A-Za-z0-9@._+\- ]*$/.test(value)) {
+            this.updateFieldValidation('sshComment', false, 'Comment can only contain letters, numbers, spaces and @ . _ + -');
+            return false;
+        }
+        this.updateFieldValidation('sshComment', true, '');
+        return true;
+    }
+
+    validateSshPassphrase() {
+        const value = document.getElementById('sshPassphrase').value;
+        if (value.length > 0 && value.length < 8) {
+            this.updateFieldValidation('sshPassphrase', false, 'Passphrase must be at least 8 characters');
+            return false;
+        }
+        this.updateFieldValidation('sshPassphrase', true, '');
+        return true;
+    }
+
+    async copyPublicKey() {
+        const text = this.sshPublicKey.textContent;
+        const label = this.copyPublicKeyBtn.querySelector('.btn-copy-text');
+        let ok = false;
+        try {
+            await navigator.clipboard.writeText(text);
+            ok = true;
+        } catch (_) {
+            // Fallback: select the key so the user can copy it manually
+            const range = document.createRange();
+            range.selectNodeContents(this.sshPublicKey);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+        if (label) {
+            label.textContent = ok ? 'Copied' : 'Press Ctrl+C';
+            setTimeout(() => { label.textContent = 'Copy'; }, 2000);
+        }
     }
 
     // Generic Modal Handling
@@ -253,8 +359,9 @@ class KeyJoltApp {
         this.startGeneration();
         
         try {
-            const formData = this.collectFormData();
-            const response = await this.generateKeys(formData);
+            const ssh = this.getMode() === 'ssh';
+            const formData = ssh ? this.collectSshFormData() : this.collectFormData();
+            const response = await this.generateKeys(ssh ? '/api/generate/ssh' : '/api/generate', formData);
             
             if (response.success) {
                 this.showSuccess(response);
@@ -275,6 +382,12 @@ class KeyJoltApp {
     }
     
     validateForm() {
+        if (this.getMode() === 'ssh') {
+            const commentOk = this.validateSshComment();
+            const passphraseOk = this.validateSshPassphrase();
+            return commentOk && passphraseOk;
+        }
+
         const requiredFields = ['name', 'email', 'encryptionStrength', 'keyExpiry'];
         let isValid = true;
         
@@ -325,8 +438,16 @@ class KeyJoltApp {
         };
     }
     
-    async generateKeys(formData) {
-        const response = await fetch('/api/generate', {
+    collectSshFormData() {
+        return {
+            keyType: document.getElementById('sshKeyType').value,
+            comment: document.getElementById('sshComment').value.trim(),
+            passphrase: document.getElementById('sshPassphrase').value || null
+        };
+    }
+
+    async generateKeys(url, formData) {
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -372,6 +493,13 @@ class KeyJoltApp {
     
     showSuccess(response) {
         this.successMessage.textContent = response.message;
+        if (response.publicKey) {
+            this.sshPublicKey.textContent = response.publicKey;
+            this.sshFingerprint.textContent = response.fingerprint || '';
+            this.sshSummary.hidden = false;
+        } else {
+            this.sshSummary.hidden = true;
+        }
         this.renderDownloadLinks(response.files);
         this.resultsSection.style.display = 'block';
         this.resultsSection.classList.add('fade-in');
@@ -541,8 +669,12 @@ class KeyJoltApp {
 window.resetForm = function() {
     const app = window.keyJoltApp;
     if (app) {
+        const mode = app.getMode();
         app.hideResults();
         app.form.reset();
+        // Stay in the mode the user picked
+        document.getElementById(mode === 'ssh' ? 'modeSsh' : 'modePgp').checked = true;
+        app.applyMode();
         
         // Reset validation states
         const inputs = app.form.querySelectorAll('input, select');
