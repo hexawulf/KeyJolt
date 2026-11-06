@@ -371,17 +371,22 @@ public class KeyController {
      * Only trusts proxy headers when app.trusted-proxy=true (i.e. behind a
      * known reverse proxy like nginx). Otherwise falls back to remoteAddr
      * so rate limiting cannot be trivially bypassed via spoofed headers.
+     *
+     * X-Real-IP is preferred because the proxy overwrites it. X-Forwarded-For is
+     * appended to (nginx $proxy_add_x_forwarded_for), so its FIRST entry is
+     * client-controlled; only the LAST entry, added by our proxy, is trusted.
      */
-    private String getClientIpAddress(HttpServletRequest request) {
+    String getClientIpAddress(HttpServletRequest request) {
         if (trustedProxy) {
-            String xForwardedFor = request.getHeader("X-Forwarded-For");
-            if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-                return xForwardedFor.split(",")[0].trim();
+            String xRealIp = request.getHeader("X-Real-IP");
+            if (xRealIp != null && !xRealIp.isBlank()) {
+                return xRealIp.trim();
             }
 
-            String xRealIp = request.getHeader("X-Real-IP");
-            if (xRealIp != null && !xRealIp.isEmpty()) {
-                return xRealIp;
+            String xForwardedFor = request.getHeader("X-Forwarded-For");
+            if (xForwardedFor != null && !xForwardedFor.isBlank()) {
+                String[] hops = xForwardedFor.split(",");
+                return hops[hops.length - 1].trim();
             }
         }
 

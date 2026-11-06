@@ -81,6 +81,10 @@ class SshKeyServiceTest {
 
         if (FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
             assertEquals("rw-------", PosixFilePermissions.toString(Files.getPosixFilePermissions(priv.toPath())));
+            assertEquals("rwx------", PosixFilePermissions.toString(
+                    Files.getPosixFilePermissions(priv.getParentFile().toPath())), "request dir must be 0700");
+            assertEquals("rwx------", PosixFilePermissions.toString(
+                    Files.getPosixFilePermissions(tempDir)), "base temp dir must be 0700");
         }
 
         assumeTrue(Files.isExecutable(SSH_KEYGEN), "ssh-keygen not installed; skipping OpenSSH cross-check");

@@ -33,6 +33,7 @@ public class FileUtils {
     private static final Pattern TOKEN_PATTERN = Pattern.compile("^[a-f0-9]{32}$");
     private static final Pattern FILENAME_PATTERN = Pattern.compile("^[A-Za-z0-9@._+-]{1,200}$");
     private static final Set<PosixFilePermission> OWNER_RW = PosixFilePermissions.fromString("rw-------");
+    private static final Set<PosixFilePermission> OWNER_RWX = PosixFilePermissions.fromString("rwx------");
 
     @Value("${app.temp-dir:${java.io.tmpdir}/keyjolt}")
     private String tempDir;
@@ -49,6 +50,10 @@ public class FileUtils {
             if (!Files.exists(tempPath)) {
                 Files.createDirectories(tempPath);
             }
+            // Request tokens are secrets: other local users must not be able to list them
+            if (isPosix()) {
+                Files.setPosixFilePermissions(tempPath, OWNER_RWX);
+            }
             logger.info("Temp directory ready: {}", tempPath.toAbsolutePath());
         } catch (IOException e) {
             throw new RuntimeException("Failed to create temp directory: " + tempDir, e);
@@ -62,8 +67,18 @@ public class FileUtils {
         byte[] raw = new byte[16];
         SECURE_RANDOM.nextBytes(raw);
         String token = HexFormat.of().formatHex(raw);
-        Files.createDirectories(basePath().resolve(token));
+        Path dir = basePath().resolve(token);
+        if (isPosix()) {
+            Files.createDirectory(dir, PosixFilePermissions.asFileAttribute(OWNER_RWX));
+            Files.setPosixFilePermissions(dir, OWNER_RWX); // not narrowed by umask, but be explicit
+        } else {
+            Files.createDirectory(dir);
+        }
         return token;
+    }
+
+    private static boolean isPosix() {
+        return FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
     }
 
     /**
@@ -82,7 +97,7 @@ public class FileUtils {
         }
         Files.createDirectories(parent);
 
-        if (secret && FileSystems.getDefault().supportedFileAttributeViews().contains("posix")) {
+        if (secret && isPosix()) {
             Files.deleteIfExists(filePath);
             Files.createFile(filePath, PosixFilePermissions.asFileAttribute(OWNER_RW));
         }

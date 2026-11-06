@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
+    "app.temp-dir=target/test-keys",
     "app.rate-limit.requests-per-hour=1000",
     "app.rate-limit.burst-capacity=1000"
 })

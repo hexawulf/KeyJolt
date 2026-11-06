@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=java" alt="Java">
   <img src="https://img.shields.io/badge/Security-PGP%20%26%20SSH-blue?style=for-the-badge&logo=gnuprivacyguard" alt="Security">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Version-1.1.0-blue?style=for-the-badge" alt="Version 1.1.0">
+  <img src="https://img.shields.io/badge/Version-1.1.1-blue?style=for-the-badge" alt="Version 1.1.1">
 </div>
 
 <div align="center">
@@ -14,6 +14,19 @@
 </div>
 
 ---
+
+## 🆕 What's New in v1.1.1
+
+A hardening patch on top of v1.1.0:
+- **Private temp storage.** The key directory (`app.temp-dir`) and every per-request token
+  directory are now `0700`, so other local users on the host can't list request tokens.
+- **Per-client rate limiting behind a proxy.** With `app.trusted-proxy=true`, the client is identified by
+  `X-Real-IP`, which the proxy overwrites. If that header is missing, only the **last** `X-Forwarded-For` hop
+  (the one our proxy appended) is used. The first hop is client-controlled and is no longer trusted, so
+  rotating a fake `X-Forwarded-For` doesn't get around the limit. Production (nginx behind Cloudflare,
+  with `real_ip_header CF-Connecting-IP`) now runs with `--app.trusted-proxy=true`. Before this,
+  every visitor counted as `127.0.0.1` and shared one bucket.
+- **Tests no longer write into the production temp directory.** They use `target/test-keys`.
 
 ## 🆕 What's New in v1.1.0
 
@@ -174,6 +187,10 @@ server.address=0.0.0.0
 # Rate Limiting
 app.rate-limit.requests-per-hour=10
 app.rate-limit.burst-capacity=5
+
+# Behind a reverse proxy that sets X-Real-IP (nginx): true = limit per client.
+# Leave false when exposed directly, or clients could spoof their IP.
+app.trusted-proxy=false
 
 # File Cleanup (milliseconds)
 app.key-cleanup-delay=300000
