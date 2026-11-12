@@ -55,6 +55,13 @@ public class FileUtils {
         } catch (IOException e) {
             throw new RuntimeException("Failed to create temp directory: " + tempDir, e);
         }
+        // Anything still here was written by a previous run whose scheduled
+        // deletions never fired (kill -9, power loss, crash). The download
+        // tokens of that run are meaningless now, so the keys must go.
+        int leftovers = cleanupTempDirectory();
+        if (leftovers > 0) {
+            logger.warn("Removed {} leftover key file(s) from a previous run", leftovers);
+        }
     }
 
     /**
@@ -232,42 +239,78 @@ public class FileUtils {
     }
 
     /**
-     * Clean up all files in temp directory
+     * Securely delete the files of every request directory and remove those
+     * directories. The base directory itself is kept.
+     *
+     * Only directories this class creates are touched: direct children of the
+     * temp directory whose name is a request token. Anything else is left
+     * alone, so a temp-dir setting that points at a shared directory cannot
+     * make this delete unrelated files. Symbolic links are removed, never
+     * followed.
+     *
+     * @return number of files deleted
      */
-    public void cleanupTempDirectory() {
-        try {
-            Path tempPath = Paths.get(tempDir);
-            if (Files.exists(tempPath)) {
-                try (java.util.stream.Stream<Path> paths = Files.walk(tempPath)) {
-                    paths.filter(Files::isRegularFile)
-                        .forEach(path -> {
-                            try {
-                                secureDelete(path.toFile());
-                            } catch (IOException e) {
-                                logger.error("Failed to delete file: {} - {}", path, e.getMessage(), e);
-                            }
-                        });
+    public int cleanupTempDirectory() {
+        Path base = basePath();
+        if (!Files.isDirectory(base, LinkOption.NOFOLLOW_LINKS)) {
+            return 0;
+        }
+        int deleted = 0;
+        try (DirectoryStream<Path> requestDirs = Files.newDirectoryStream(base)) {
+            for (Path dir : requestDirs) {
+                if (!TOKEN_PATTERN.matcher(dir.getFileName().toString()).matches()
+                        || !Files.isDirectory(dir, LinkOption.NOFOLLOW_LINKS)) {
+                    continue;
+                }
+                deleted += cleanupRequestDir(dir);
+            }
+        } catch (IOException | DirectoryIteratorException e) {
+            logger.error("Failed to list temp directory for cleanup: {}", e.getMessage(), e);
+        }
+        return deleted;
+    }
+
+    private int cleanupRequestDir(Path dir) {
+        int deleted = 0;
+        try (DirectoryStream<Path> entries = Files.newDirectoryStream(dir)) {
+            for (Path entry : entries) {
+                try {
+                    if (Files.isRegularFile(entry, LinkOption.NOFOLLOW_LINKS)) {
+                        secureDelete(entry.toFile());
+                        deleted++;
+                    } else if (Files.isSymbolicLink(entry)) {
+                        Files.delete(entry); // the link only, not its target
+                    }
+                } catch (IOException e) {
+                    logger.error("Failed to delete a file during cleanup: {}", e.getMessage(), e);
                 }
             }
-        } catch (IOException e) {
-            logger.error("Failed to cleanup temp directory: {}", e.getMessage(), e);
+        } catch (IOException | DirectoryIteratorException e) {
+            logger.error("Failed to list a request directory for cleanup: {}", e.getMessage(), e);
         }
+        removeEmptyRequestDir(dir);
+        return deleted;
     }
 
     /**
-     * Shutdown cleanup scheduler
+     * Cancel the pending timed deletions and delete everything now.
+     *
+     * The scheduled deletions would be lost with the JVM, which used to leave
+     * private keys on disk whenever the app stopped within the cleanup delay
+     * of a generation. Download links do not survive a restart anyway.
      */
     @PreDestroy
     public void shutdown() {
-        logger.info("Shutting down FileUtils scheduler");
-        scheduler.shutdown();
+        scheduler.shutdownNow();
         try {
-            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                scheduler.shutdownNow();
+            // a deletion that was already running may still hold a file
+            if (!scheduler.awaitTermination(2, TimeUnit.SECONDS)) {
+                logger.warn("A scheduled deletion was still running at shutdown");
             }
         } catch (InterruptedException e) {
-            scheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
+        int deleted = cleanupTempDirectory();
+        logger.info("Shutdown cleanup: {} pending key file(s) deleted", deleted);
     }
 }

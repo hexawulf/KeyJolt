@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=java" alt="Java">
   <img src="https://img.shields.io/badge/Security-PGP%20%26%20SSH-blue?style=for-the-badge&logo=gnuprivacyguard" alt="Security">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Version-1.1.2-blue?style=for-the-badge" alt="Version 1.1.2">
+  <img src="https://img.shields.io/badge/Version-1.1.3-blue?style=for-the-badge" alt="Version 1.1.3">
 </div>
 
 <div align="center">
@@ -14,6 +14,16 @@
 </div>
 
 ---
+
+## 🆕 What's New in v1.1.3
+
+A security patch:
+- **Fixed: private keys could stay on disk after a restart.** Key files are deleted by a timer
+  five minutes after generation. When the app stopped inside that window the timers were dropped
+  and the files were never removed. On shutdown the app now deletes all pending key files at once,
+  and on startup it removes anything a previous run left behind (crash, `kill -9`, power loss).
+  Only KeyJolt's own per-request directories are touched.
+- Shutdown no longer waits five seconds for the timers.
 
 ## 🆕 What's New in v1.1.2
 
