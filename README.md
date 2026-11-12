@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=java" alt="Java">
   <img src="https://img.shields.io/badge/Security-PGP%20%26%20SSH-blue?style=for-the-badge&logo=gnuprivacyguard" alt="Security">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Version-1.1.3-blue?style=for-the-badge" alt="Version 1.1.3">
+  <img src="https://img.shields.io/badge/Version-1.1.4-blue?style=for-the-badge" alt="Version 1.1.4">
 </div>
 
 <div align="center">
@@ -14,6 +14,24 @@
 </div>
 
 ---
+
+## 🆕 What's New in v1.1.4
+
+A security and robustness patch:
+- **Fixed: the SSH private key was not password-protected in combined mode.** With "also generate
+  an SSH key" ticked, the password encrypted only the PGP key. It now encrypts the SSH private
+  key too (OpenSSH format, bcrypt KDF + AES-256-CTR).
+- **Generation is capped.** At most two RSA generations run at once (`app.generation.max-concurrent`);
+  further requests wait up to five seconds and then get `503` with `Retry-After`, without losing
+  a rate-limit token.
+- **Less in the logs.** Download tokens, file names and e-mail addresses are no longer logged, and
+  the unused default Spring Security user (with its generated password) is gone.
+- **HSTS** is now actually sent (the app only sees plain HTTP behind the reverse proxy).
+- **Input limits.** E-mail addresses are limited to 100 characters; names accept plain spaces
+  only, no tabs or line breaks.
+- Rate-limit buckets of idle clients are evicted again (slow memory leak).
+- Dependencies: Spring Boot 3.2.0 → 3.5.16, BouncyCastle 1.80 → 1.87, bucket4j 7.6 → 8.22,
+  SpotBugs plugin 4.10.5.
 
 ## 🆕 What's New in v1.1.3
 

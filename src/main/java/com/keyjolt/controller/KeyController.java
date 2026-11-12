@@ -10,8 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Bucket4j;
-import io.github.bucket4j.Refill;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -423,9 +421,15 @@ public class KeyController {
      */
     Bucket getBucket(String ip) {
         return buckets.computeIfAbsent(ip, k -> {
-            Bandwidth limit = Bandwidth.classic(requestsPerHour, Refill.intervally(requestsPerHour, Duration.ofHours(1)));
-            Bandwidth burst = Bandwidth.classic(burstCapacity, Refill.greedy(burstCapacity, Duration.ofMinutes(1)));
-            return Bucket4j.builder()
+            Bandwidth limit = Bandwidth.builder()
+                .capacity(requestsPerHour)
+                .refillIntervally(requestsPerHour, Duration.ofHours(1))
+                .build();
+            Bandwidth burst = Bandwidth.builder()
+                .capacity(burstCapacity)
+                .refillGreedy(burstCapacity, Duration.ofMinutes(1))
+                .build();
+            return Bucket.builder()
                 .addLimit(limit)
                 .addLimit(burst)
                 .build();
