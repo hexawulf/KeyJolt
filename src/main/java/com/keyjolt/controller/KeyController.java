@@ -12,6 +12,7 @@ import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Bucket4j;
 import io.github.bucket4j.Refill;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +43,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.scheduling.annotation.Scheduled;
 
@@ -71,8 +74,27 @@ public class KeyController {
     @Value("${app.trusted-proxy:false}")
     private boolean trustedProxy;
 
+    /**
+     * How many RSA generations may run at once. One PGP request searches for up
+     * to three RSA keys in parallel, so a handful of clients could otherwise pin
+     * every core and push all requests past the proxy timeout.
+     */
+    @Value("${app.generation.max-concurrent:2}")
+    private int maxConcurrentGenerations;
+
+    /** How long a request waits for a free slot before it is answered with 503. */
+    @Value("${app.generation.queue-wait-ms:5000}")
+    private long generationQueueWaitMs;
+
+    private Semaphore generationSlots;
+
     // Rate limiting buckets per IP
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+
+    @PostConstruct
+    void initGenerationSlots() {
+        generationSlots = new Semaphore(Math.max(1, maxConcurrentGenerations), true);
+    }
 
     /**
      * Show the main key generation form
@@ -98,7 +120,8 @@ public class KeyController {
         String clientIp = getClientIpAddress(httpRequest);
         logger.info("Key generation request from {}", clientIp);
 
-        if (!getBucket(clientIp).tryConsume(1)) {
+        Bucket bucket = getBucket(clientIp);
+        if (!bucket.tryConsume(1)) {
             return rateLimited();
         }
 
@@ -116,13 +139,18 @@ public class KeyController {
                 .body(KeyResponse.error("Password must be at least 8 characters if provided."));
         }
 
+        if (!acquireGenerationSlot()) {
+            bucket.addTokens(1); // the client got nothing for this attempt
+            return busy();
+        }
+
+        CompletableFuture<SshKeyService.SshKeyPair> sshFuture = null;
         try {
             String requestDir = fileUtils.newRequestDir();
             List<KeyResponse.FileInfo> files = new ArrayList<>();
 
             // The SSH RSA key is independent of the PGP keys: start it first so it
             // is generated on another core while the PGP keys are being built.
-            CompletableFuture<SshKeyService.SshKeyPair> sshFuture = null;
             if (request.isGenerateSshKey()) {
                 sshFuture = CompletableFuture.supplyAsync(() -> {
                     try {
@@ -155,6 +183,13 @@ public class KeyController {
             logger.error("Failed to generate keys", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(KeyResponse.error("Key generation failed. Please try again."));
+        } finally {
+            // If the PGP part failed, the SSH key is still being generated: the
+            // slot is only free once that work has really stopped.
+            if (sshFuture != null) {
+                sshFuture.handle((result, error) -> null).join();
+            }
+            generationSlots.release();
         }
     }
 
@@ -171,7 +206,8 @@ public class KeyController {
         String clientIp = getClientIpAddress(httpRequest);
         logger.info("SSH key generation request from {}", clientIp);
 
-        if (!getBucket(clientIp).tryConsume(1)) {
+        Bucket bucket = getBucket(clientIp);
+        if (!bucket.tryConsume(1)) {
             return rateLimited();
         }
 
@@ -182,6 +218,13 @@ public class KeyController {
         if (!request.hasValidPassphrase()) {
             return ResponseEntity.badRequest()
                 .body(KeyResponse.error("Passphrase must be at least 8 characters if provided."));
+        }
+
+        // Ed25519 takes milliseconds; only RSA-4096 needs a slot.
+        boolean heavy = !request.isEd25519();
+        if (heavy && !acquireGenerationSlot()) {
+            bucket.addTokens(1);
+            return busy();
         }
 
         try {
@@ -206,6 +249,10 @@ public class KeyController {
             logger.error("Failed to generate SSH keys", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(KeyResponse.error("Key generation failed. Please try again."));
+        } finally {
+            if (heavy) {
+                generationSlots.release();
+            }
         }
     }
 
@@ -240,7 +287,7 @@ public class KeyController {
                 .body(fileResource);
 
         } catch (Exception e) {
-            logger.error("Download failed for file: {}", filename, e);
+            logger.error("Download failed: {}", e.getClass().getSimpleName());
             return jsonError(HttpStatus.INTERNAL_SERVER_ERROR, "Download failed.");
         }
     }
@@ -266,7 +313,7 @@ public class KeyController {
                 } else if (value.length() > 50) {
                     isValid = false;
                     message = "Name must not exceed 50 characters";
-                } else if (!value.matches("^[a-zA-Z0-9\\s]+$")) {
+                } else if (!value.matches("^[a-zA-Z0-9 ]+$")) {
                     isValid = false;
                     message = "Name can only contain letters, numbers, and spaces";
                 }
@@ -276,6 +323,9 @@ public class KeyController {
                 if (value == null || value.trim().isEmpty()) {
                     isValid = false;
                     message = "Email is required";
+                } else if (value.length() > KeyRequest.MAX_EMAIL_LENGTH) {
+                    isValid = false;
+                    message = "Email must not exceed 100 characters";
                 } else if (!value.matches("^[A-Za-z0-9+_.-]+@([A-Za-z0-9.-]+\\.[A-Za-z]{2,})$")) {
                     isValid = false;
                     message = "Please enter a valid email address";
@@ -339,6 +389,21 @@ public class KeyController {
             .body(KeyResponse.error("Rate limit exceeded. Please try again later."));
     }
 
+    private static ResponseEntity<KeyResponse> busy() {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+            .header(HttpHeaders.RETRY_AFTER, "10")
+            .body(KeyResponse.error("The server is busy generating keys. Please try again in a few seconds."));
+    }
+
+    private boolean acquireGenerationSlot() {
+        try {
+            return generationSlots.tryAcquire(generationQueueWaitMs, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
     private static ResponseEntity<KeyResponse> validationFailed(BindingResult bindingResult) {
         StringBuilder errors = new StringBuilder();
         bindingResult.getFieldErrors().forEach(error ->
@@ -356,7 +421,7 @@ public class KeyController {
     /**
      * Get rate limiting bucket for IP address
      */
-    private Bucket getBucket(String ip) {
+    Bucket getBucket(String ip) {
         return buckets.computeIfAbsent(ip, k -> {
             Bandwidth limit = Bandwidth.classic(requestsPerHour, Refill.intervally(requestsPerHour, Duration.ofHours(1)));
             Bandwidth burst = Bandwidth.classic(burstCapacity, Refill.greedy(burstCapacity, Duration.ofMinutes(1)));
@@ -367,13 +432,23 @@ public class KeyController {
         });
     }
 
+    int bucketCount() {
+        return buckets.size();
+    }
+
+    /**
+     * Drop buckets that are full again, i.e. clients that have not generated
+     * anything recently. A bucket never holds more tokens than its smallest
+     * limit, so that (not the hourly limit alone) is what "full" means.
+     */
     @Scheduled(fixedRate = 3600000)
     public void evictStaleBuckets() {
+        long full = Math.min(requestsPerHour, burstCapacity);
         int before = buckets.size();
         Iterator<Map.Entry<String, Bucket>> it = buckets.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<String, Bucket> entry = it.next();
-            if (entry.getValue().getAvailableTokens() >= requestsPerHour) {
+            if (entry.getValue().getAvailableTokens() >= full) {
                 it.remove();
             }
         }

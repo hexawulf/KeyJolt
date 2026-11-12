@@ -10,12 +10,16 @@ public class KeyRequest {
     
     @NotBlank(message = "Name is required")
     @Size(max = 50, message = "Name must not exceed 50 characters")
-    @Pattern(regexp = "^[a-zA-Z0-9\\s]+$", message = "Name can only contain letters, numbers, and spaces")
+    @Pattern(regexp = "^[a-zA-Z0-9 ]+$", message = "Name can only contain letters, numbers, and spaces")
     private String name;
     
     @NotBlank(message = "Email is required")
     @Email(message = "Please enter a valid email address")
+    @Size(max = MAX_EMAIL_LENGTH, message = "Email must not exceed 100 characters")
     private String email;
+
+    /** Keeps generated file names (email + name + key id) inside the 200-character limit. */
+    public static final int MAX_EMAIL_LENGTH = 100;
     
     private static final Set<Integer> ALLOWED_STRENGTHS = Set.of(2048, 3072, 4096);
 

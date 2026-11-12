@@ -19,6 +19,14 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(RequestLoggingFilter.class);
 
+    /**
+     * Download URLs carry the request token (the only secret protecting a key
+     * until it is deleted) and a file name that may contain an e-mail address.
+     */
+    static String loggablePath(String uri) {
+        return uri != null && uri.startsWith("/download/") ? "/download/<redacted>" : uri;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -28,7 +36,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } finally {
             long duration = System.currentTimeMillis() - start;
-            String uri = request.getRequestURI();
+            String uri = loggablePath(request.getRequestURI());
             if (uri.equals("/api/validate")
                     || uri.startsWith("/css/") || uri.startsWith("/js/") || uri.startsWith("/images/")
                     || uri.endsWith(".ico") || uri.endsWith(".png") || uri.endsWith(".webmanifest")) {

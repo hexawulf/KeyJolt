@@ -285,4 +285,65 @@ class KeyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valid").value(false));
     }
+
+    /** KJ-07: TLS ends at the proxy, so HSTS must be sent on plain-HTTP requests too. */
+    @Test
+    void hstsHeaderIsSentEvenThoughTheAppSeesPlainHttp() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Strict-Transport-Security", "max-age=31536000 ; includeSubDomains"));
+    }
+
+    /** KJ-05: a very long (but syntactically valid) e-mail used to fail late with a 500. */
+    @Test
+    void generateKeysRejectsOverlongEmailBeforeGeneratingAnything() throws Exception {
+        String email = "a".repeat(60) + "@" + "b".repeat(50) + ".example.com";
+        KeyRequest request = new KeyRequest("Test User", email, 4096, 0, true, null);
+
+        long started = System.nanoTime();
+        mockMvc.perform(post("/api/generate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("Email must not exceed 100 characters")));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                (System.nanoTime() - started) / 1_000_000 < 1500, "rejected before any RSA work");
+    }
+
+    @Test
+    void generateKeysAcceptsEmailAtTheLengthLimit() throws Exception {
+        String email = "a".repeat(60) + "@" + "b".repeat(27) + ".example.com"; // 100 characters
+        org.junit.jupiter.api.Assertions.assertEquals(100, email.length());
+        KeyRequest request = new KeyRequest("N".repeat(50), email, 2048, 0, true, null);
+
+        mockMvc.perform(post("/api/generate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.files.length()").value(4));
+    }
+
+    /** KJ-05: \\s let tabs and line breaks into the PGP user ID. */
+    @Test
+    void generateKeysRejectsControlWhitespaceInName() throws Exception {
+        for (String name : new String[] {"Evil\nName", "Tab\tName", "CR\rName"}) {
+            KeyRequest request = new KeyRequest(name, "test@example.com", 2048, 0, false, null);
+            mockMvc.perform(post("/api/generate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
+    void validateFieldAppliesTheSameNameAndEmailRules() throws Exception {
+        mockMvc.perform(post("/api/validate").param("field", "name").param("value", "Tab\tName"))
+                .andExpect(jsonPath("$.valid").value(false));
+        mockMvc.perform(post("/api/validate").param("field", "name").param("value", "Plain Name 1"))
+                .andExpect(jsonPath("$.valid").value(true));
+        mockMvc.perform(post("/api/validate").param("field", "email")
+                        .param("value", "a".repeat(95) + "@example.com"))
+                .andExpect(jsonPath("$.valid").value(false))
+                .andExpect(jsonPath("$.message").value("Email must not exceed 100 characters"));
+    }
 }

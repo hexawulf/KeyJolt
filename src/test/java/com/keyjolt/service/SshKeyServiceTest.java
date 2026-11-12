@@ -146,4 +146,43 @@ class SshKeyServiceTest {
     }
 
     private record ProcessResult(int exitCode, String output) {}
+
+    /** The OpenSSH container names its cipher in clear text right after the magic. */
+    private static String opensshCipher(File privateKey) throws Exception {
+        String body = Files.readString(privateKey.toPath(), StandardCharsets.UTF_8)
+                .replaceAll("-----[A-Z ]+-----", "").replaceAll("\\s", "");
+        java.nio.ByteBuffer buf = java.nio.ByteBuffer.wrap(java.util.Base64.getDecoder().decode(body));
+        buf.position("openssh-key-v1\0".length());
+        byte[] name = new byte[buf.getInt()];
+        buf.get(name);
+        return new String(name, StandardCharsets.US_ASCII);
+    }
+
+    /**
+     * KJ-02: in combined mode the password protected only the PGP key; the SSH
+     * private key was written in clear.
+     */
+    @Test
+    void combinedModeEncryptsSshKeyWithThePgpPassword() throws Exception {
+        KeyRequest request = new KeyRequest("Test User", "test@example.com", 2048, 0, true, "Secret123!");
+        SshKeyService.SshKeyPair pair = service.generateKeyPair(request, fileUtils.newRequestDir());
+        File priv = pair.getPrivateKeyFile();
+
+        assertEquals("aes256-ctr", opensshCipher(priv));
+
+        assumeTrue(Files.isExecutable(SSH_KEYGEN), "ssh-keygen not installed; skipping OpenSSH cross-check");
+        ProcessResult right = sshKeygen("-y", "-P", "Secret123!", "-f", priv.getAbsolutePath());
+        assertEquals(0, right.exitCode, right.output);
+        assertEquals(keyBody(pair.getPublicKeyContent()), keyBody(right.output.trim()));
+        assertNotEquals(0, sshKeygen("-y", "-P", "", "-f", priv.getAbsolutePath()).exitCode,
+                "the key must not open without the password");
+    }
+
+    @ParameterizedTest(name = "password=[{0}]")
+    @CsvSource(value = {"NULL", "''"}, nullValues = "NULL")
+    void combinedModeWithoutPasswordStaysUnencrypted(String password) throws Exception {
+        KeyRequest request = new KeyRequest("Test User", "test@example.com", 2048, 0, true, password);
+        SshKeyService.SshKeyPair pair = service.generateKeyPair(request, fileUtils.newRequestDir());
+        assertEquals("none", opensshCipher(pair.getPrivateKeyFile()));
+    }
 }
