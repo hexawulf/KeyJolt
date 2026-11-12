@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -19,7 +20,8 @@ import java.nio.file.Paths;
  * This application provides secure PGP and SSH key pair generation
  * with automatic cleanup and rate limiting features.
  */
-@SpringBootApplication
+// No logins exist, so no default user (and no generated password in the log).
+@SpringBootApplication(exclude = UserDetailsServiceAutoConfiguration.class)
 @EnableAsync
 @EnableScheduling
 public class KeyjoltApplication {

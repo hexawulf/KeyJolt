@@ -32,13 +32,16 @@ public class SshKeyService {
 
     /**
      * SSH pair generated alongside PGP keys (combined mode): RSA at the PGP strength.
+     * A password given for the PGP key protects the SSH private key as well.
      */
     public SshKeyPair generateKeyPair(KeyRequest request, String requestDir)
             throws IOException, GeneralSecurityException {
         KeyPair keyPair = KeyUtils.generateKeyPair(KeyPairProvider.SSH_RSA, request.getEncryptionStrength());
         String base = request.getSanitizedEmail() + "_" + request.getSanitizedName();
-        return write(keyPair, request.getEmail(), null, requestDir,
-                base + "_ssh_pub.key", base + "_ssh_priv.key");
+        String password = request.getPassword();
+        return write(keyPair, request.getEmail(),
+                password == null || password.isEmpty() ? null : password,
+                requestDir, base + "_ssh_pub.key", base + "_ssh_priv.key");
     }
 
     /**

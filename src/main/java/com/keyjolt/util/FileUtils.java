@@ -127,10 +127,12 @@ public class FileUtils {
         Files.write(filePath, content);
 
         File file = filePath.toFile();
-        String absPath = filePath.toAbsolutePath().toString();
-        logger.info("File written: {} (scheduled deletion in {}ms)", absPath, cleanupDelay);
+        // The path holds the download token and, for PGP keys, the e-mail
+        // address: neither belongs in the log.
+        logger.info("Key file written ({} bytes, secret={}, deletion in {} ms)",
+                content.length, secret, cleanupDelay);
 
-        scheduleFileDeletion(file, absPath);
+        scheduleFileDeletion(file);
         return file;
     }
 
@@ -161,19 +163,19 @@ public class FileUtils {
     /**
      * Schedule file deletion after delay; removes the request directory once empty.
      */
-    private void scheduleFileDeletion(File file, String originalPathForLogging) {
+    private void scheduleFileDeletion(File file) {
         scheduler.schedule(() -> {
             try {
                 if (file.exists()) {
-                    logger.info("Attempting to securely delete file: {}", originalPathForLogging);
                     secureDelete(file);
-                    logger.info("Successfully deleted file: {}", originalPathForLogging);
+                    logger.info("Key file deleted after {} ms", cleanupDelay);
                 } else {
-                    logger.warn("File scheduled for deletion no longer exists: {}", originalPathForLogging);
+                    logger.debug("Key file scheduled for deletion was already gone");
                 }
                 removeEmptyRequestDir(file.toPath().getParent());
             } catch (Exception e) {
-                logger.error("Failed to delete file: {} - {}", originalPathForLogging, e.getMessage(), e);
+                // exception class only: its message contains the file path
+                logger.error("Failed to delete a key file: {}", e.getClass().getSimpleName());
             }
         }, cleanupDelay, TimeUnit.MILLISECONDS);
     }
@@ -191,7 +193,7 @@ public class FileUtils {
         } catch (DirectoryNotEmptyException ignored) {
             // other files from this request are still pending deletion
         } catch (IOException e) {
-            logger.warn("Failed to remove request directory {}: {}", normalized, e.getMessage());
+            logger.warn("Failed to remove a request directory: {}", e.getClass().getSimpleName());
         }
     }
 
@@ -220,7 +222,7 @@ public class FileUtils {
         }
 
         if (!file.delete()) {
-            throw new IOException("Failed to delete file: " + file.getAbsolutePath());
+            throw new IOException("Failed to delete file");
         }
     }
 
@@ -284,11 +286,11 @@ public class FileUtils {
                         Files.delete(entry); // the link only, not its target
                     }
                 } catch (IOException e) {
-                    logger.error("Failed to delete a file during cleanup: {}", e.getMessage(), e);
+                    logger.error("Failed to delete a file during cleanup: {}", e.getClass().getSimpleName());
                 }
             }
         } catch (IOException | DirectoryIteratorException e) {
-            logger.error("Failed to list a request directory for cleanup: {}", e.getMessage(), e);
+            logger.error("Failed to list a request directory for cleanup: {}", e.getClass().getSimpleName());
         }
         removeEmptyRequestDir(dir);
         return deleted;
