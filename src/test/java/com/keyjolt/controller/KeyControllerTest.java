@@ -31,6 +31,20 @@ class KeyControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
+    void staticAssetsAreCacheable() throws Exception {
+        mockMvc.perform(get("/css/style.css"))
+            .andExpect(status().isOk())
+            .andExpect(header().string("Cache-Control", "max-age=604800, public"));
+    }
+
+    @Test
+    void apiResponsesAreNotCacheable() throws Exception {
+        mockMvc.perform(get("/healthz"))
+            .andExpect(status().isOk())
+            .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")));
+    }
+
+    @Test
     void indexPageReturns200() throws Exception {
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())

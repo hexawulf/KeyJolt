@@ -29,14 +29,18 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.scheduling.annotation.Scheduled;
@@ -116,12 +120,25 @@ public class KeyController {
             String requestDir = fileUtils.newRequestDir();
             List<KeyResponse.FileInfo> files = new ArrayList<>();
 
+            // The SSH RSA key is independent of the PGP keys: start it first so it
+            // is generated on another core while the PGP keys are being built.
+            CompletableFuture<SshKeyService.SshKeyPair> sshFuture = null;
+            if (request.isGenerateSshKey()) {
+                sshFuture = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return sshKeyService.generateKeyPair(request, requestDir);
+                    } catch (IOException | GeneralSecurityException e) {
+                        throw new CompletionException(e);
+                    }
+                });
+            }
+
             PgpKeyService.PgpKeyPair pgpKeys = pgpKeyService.generateKeyPair(request, requestDir);
             files.add(fileInfo(requestDir, pgpKeys.getPublicKeyFile(), "pgp_public"));
             files.add(fileInfo(requestDir, pgpKeys.getPrivateKeyFile(), "pgp_private"));
 
-            if (request.isGenerateSshKey()) {
-                SshKeyService.SshKeyPair sshKeys = sshKeyService.generateKeyPair(request, requestDir);
+            if (sshFuture != null) {
+                SshKeyService.SshKeyPair sshKeys = sshFuture.join();
                 files.add(fileInfo(requestDir, sshKeys.getPublicKeyFile(), "ssh_public"));
                 files.add(fileInfo(requestDir, sshKeys.getPrivateKeyFile(), "ssh_private"));
             }

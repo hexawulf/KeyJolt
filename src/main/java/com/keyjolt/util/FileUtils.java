@@ -46,18 +46,34 @@ public class FileUtils {
     @PostConstruct
     public void initTempDirectory() {
         try {
-            Path tempPath = Paths.get(tempDir);
-            if (!Files.exists(tempPath)) {
-                Files.createDirectories(tempPath);
-            }
+            Path tempPath = ensureBaseDir();
             // Request tokens are secrets: other local users must not be able to list them
             if (isPosix()) {
                 Files.setPosixFilePermissions(tempPath, OWNER_RWX);
             }
-            logger.info("Temp directory ready: {}", tempPath.toAbsolutePath());
+            logger.info("Temp directory ready: {}", tempPath);
         } catch (IOException e) {
             throw new RuntimeException("Failed to create temp directory: " + tempDir, e);
         }
+    }
+
+    /**
+     * Make sure the base temp directory exists (owner-only) and return it.
+     *
+     * The directory usually lives under /tmp and is empty between requests, so
+     * tmp cleaners that prune empty directories remove it while the app is running.
+     * It is therefore re-checked on every request instead of only at startup.
+     */
+    private Path ensureBaseDir() throws IOException {
+        Path base = basePath();
+        if (!Files.isDirectory(base)) {
+            Files.createDirectories(base);
+            if (isPosix()) {
+                Files.setPosixFilePermissions(base, OWNER_RWX);
+            }
+            logger.warn("Temp directory {} was missing; recreated it", base);
+        }
+        return base;
     }
 
     /**
@@ -67,7 +83,7 @@ public class FileUtils {
         byte[] raw = new byte[16];
         SECURE_RANDOM.nextBytes(raw);
         String token = HexFormat.of().formatHex(raw);
-        Path dir = basePath().resolve(token);
+        Path dir = ensureBaseDir().resolve(token);
         if (isPosix()) {
             Files.createDirectory(dir, PosixFilePermissions.asFileAttribute(OWNER_RWX));
             Files.setPosixFilePermissions(dir, OWNER_RWX); // not narrowed by umask, but be explicit

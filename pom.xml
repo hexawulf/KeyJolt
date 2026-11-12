@@ -14,7 +14,7 @@
     
     <groupId>com.keyjolt</groupId>
     <artifactId>keyjolt</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
     <name>KeyJolt PGP Key Generator</name>
     <description>Secure PGP and SSH key pair generator</description>
     

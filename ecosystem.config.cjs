@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'keyjolt',
       script: '/usr/lib/jvm/java-17-openjdk-arm64/bin/java',
-      args: '-jar /home/zk/projects/KeyJolt/target/keyjolt-1.1.1.jar --app.trusted-proxy=true',
+      args: '-jar /home/zk/projects/KeyJolt/target/keyjolt-1.1.2.jar --app.trusted-proxy=true',
       interpreter: 'none',
       cwd: '/home/zk/projects/KeyJolt',
       env: {

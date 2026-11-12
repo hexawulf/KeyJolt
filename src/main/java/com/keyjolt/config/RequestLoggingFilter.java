@@ -29,7 +29,8 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         } finally {
             long duration = System.currentTimeMillis() - start;
             String uri = request.getRequestURI();
-            if (uri.startsWith("/css/") || uri.startsWith("/js/") || uri.startsWith("/images/")
+            if (uri.equals("/api/validate")
+                    || uri.startsWith("/css/") || uri.startsWith("/js/") || uri.startsWith("/images/")
                     || uri.endsWith(".ico") || uri.endsWith(".png") || uri.endsWith(".webmanifest")) {
                 logger.debug("{} {} {} {}ms", request.getMethod(), uri, response.getStatus(), duration);
             } else {

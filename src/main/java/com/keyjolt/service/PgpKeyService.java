@@ -7,6 +7,7 @@ import org.bouncycastle.bcpg.HashAlgorithmTags;
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.bcpg.sig.Features;
 import org.bouncycastle.bcpg.sig.KeyFlags;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator;
 import org.bouncycastle.crypto.params.RSAKeyGenerationParameters;
 import org.bouncycastle.openpgp.*;
@@ -23,6 +24,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Date;
+import java.util.concurrent.CompletableFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,16 +61,12 @@ public class PgpKeyService {
      * Generate a PGP key pair based on the request parameters
      */
     public PgpKeyPair generateKeyPair(KeyRequest request, String requestDir) throws Exception {
-        // Generate RSA key pair
-        RSAKeyPairGenerator generator = new RSAKeyPairGenerator();
-        generator.init(new RSAKeyGenerationParameters(
-            BigInteger.valueOf(65537),
-            SECURE_RANDOM,
-            request.getEncryptionStrength(),
-            80
-        ));
-        
-        org.bouncycastle.crypto.AsymmetricCipherKeyPair keyPair = generator.generateKeyPair();
+        // The master key and the encryption subkey are independent RSA keys and
+        // prime search dominates the request time, so generate them in parallel.
+        int bits = request.getEncryptionStrength();
+        CompletableFuture<AsymmetricCipherKeyPair> subKeyFuture =
+            CompletableFuture.supplyAsync(() -> newRsaKeyPair(bits));
+        AsymmetricCipherKeyPair keyPair = newRsaKeyPair(bits);
         
         // Create PGP key pair
         Date now = new Date();
@@ -116,7 +114,7 @@ public class PgpKeyService {
         );
         
         // Generate encryption subkey
-        PGPKeyPair encKeyPair = new BcPGPKeyPair(PGPPublicKey.RSA_GENERAL, generator.generateKeyPair(), now);
+        PGPKeyPair encKeyPair = new BcPGPKeyPair(PGPPublicKey.RSA_GENERAL, subKeyFuture.join(), now);
         PGPSignatureSubpacketGenerator encSubpktGen = new PGPSignatureSubpacketGenerator();
         encSubpktGen.setKeyFlags(false, KeyFlags.ENCRYPT_COMMS | KeyFlags.ENCRYPT_STORAGE);
         
@@ -153,6 +151,13 @@ public class PgpKeyService {
         return new PgpKeyPair(keyId, publicKeyFile, privateKeyFile, publicKeyArmored, privateKeyArmored);
     }
     
+    private static AsymmetricCipherKeyPair newRsaKeyPair(int bits) {
+        RSAKeyPairGenerator generator = new RSAKeyPairGenerator();
+        generator.init(new RSAKeyGenerationParameters(
+            BigInteger.valueOf(65537), SECURE_RANDOM, bits, 80));
+        return generator.generateKeyPair();
+    }
+
     private String exportArmored(PGPKeyRing keyRing) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (ArmoredOutputStream armoredOut = new ArmoredOutputStream(out)) {

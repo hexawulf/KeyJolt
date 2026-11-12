@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=java" alt="Java">
   <img src="https://img.shields.io/badge/Security-PGP%20%26%20SSH-blue?style=for-the-badge&logo=gnuprivacyguard" alt="Security">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Version-1.1.1-blue?style=for-the-badge" alt="Version 1.1.1">
+  <img src="https://img.shields.io/badge/Version-1.1.2-blue?style=for-the-badge" alt="Version 1.1.2">
 </div>
 
 <div align="center">
@@ -14,6 +14,18 @@
 </div>
 
 ---
+
+## 🆕 What's New in v1.1.2
+
+A reliability and speed patch:
+- **Fixed: every key generation failed with HTTP 500 once the temp directory was removed.**
+  `app.temp-dir` defaults to `/tmp/keyjolt`, which is empty between requests, so tmp cleaners that
+  prune empty directories delete it. Since v1.1.1 it was only created at startup. It is now
+  re-created (still `0700`) on demand.
+- **Faster PGP generation.** The master key, the encryption subkey and the optional SSH RSA key are
+  generated in parallel instead of one after another.
+- **Faster page loads.** Static assets are cacheable for 7 days (CSS/JS URLs carry a content hash),
+  templates are cached, and scripts no longer block rendering.
 
 ## 🆕 What's New in v1.1.1
 
