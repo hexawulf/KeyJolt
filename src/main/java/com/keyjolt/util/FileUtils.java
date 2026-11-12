@@ -258,7 +258,9 @@ public class FileUtils {
         int deleted = 0;
         try (DirectoryStream<Path> requestDirs = Files.newDirectoryStream(base)) {
             for (Path dir : requestDirs) {
-                if (!TOKEN_PATTERN.matcher(dir.getFileName().toString()).matches()
+                Path name = dir.getFileName();
+                if (name == null
+                        || !TOKEN_PATTERN.matcher(name.toString()).matches()
                         || !Files.isDirectory(dir, LinkOption.NOFOLLOW_LINKS)) {
                     continue;
                 }
