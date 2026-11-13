@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=java" alt="Java">
   <img src="https://img.shields.io/badge/Security-PGP%20%26%20SSH-blue?style=for-the-badge&logo=gnuprivacyguard" alt="Security">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Version-1.1.4-blue?style=for-the-badge" alt="Version 1.1.4">
+  <img src="https://img.shields.io/badge/Version-1.1.5-blue?style=for-the-badge" alt="Version 1.1.5">
 </div>
 
 <div align="center">
@@ -15,7 +15,16 @@
 
 ---
 
-## 🆕 What's New in v1.1.4
+## 🆕 What's New in v1.1.5
+
+- **Expired downloads say so.** Key files are deleted five minutes after generation; clicking a
+  download after that now shows "This download link has expired" instead of doing nothing.
+- **No endless spinner.** Requests time out (generation 80 s, download 30 s, validation 10 s)
+  with a message instead of hanging.
+- **Denied requests are logged.** The request log now runs before Spring Security, so 403s
+  (scanners probing `/wp-login.php` and the like) show up in the log.
+
+## What's New in v1.1.4
 
 A security and robustness patch:
 - **Fixed: the SSH private key was not password-protected in combined mode.** With "also generate
