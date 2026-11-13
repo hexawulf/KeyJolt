@@ -295,7 +295,7 @@ class KeyJoltApp {
         // Debounce validation
         this.validationTimeouts[field] = setTimeout(async () => {
             try {
-                const response = await fetch('/api/validate', {
+                const response = await this.fetchWithTimeout('/api/validate', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
@@ -371,7 +371,9 @@ class KeyJoltApp {
             
         } catch (error) {
             console.error('Generation error:', error);
-            if (error instanceof TypeError && error.message === 'Failed to fetch') {
+            if (error.name === 'AbortError') {
+                this.showError('The server took too long to answer. Please try again.');
+            } else if (error instanceof TypeError && error.message === 'Failed to fetch') {
                 this.showError('Network error. Please check your connection and try again.');
             } else {
                 this.showError('An unexpected error occurred. Please try again.');
@@ -446,15 +448,28 @@ class KeyJoltApp {
         };
     }
 
+    // fetch() with an upper bound, so a stalled request ends with a message
+    // instead of a spinner that never stops (KJ-09).
+    async fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            return await fetch(url, { ...options, signal: controller.signal });
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
     async generateKeys(url, formData) {
-        const response = await fetch(url, {
+        // RSA 4096 can take tens of seconds on the Pi; nginx gives up at 75 s.
+        const response = await this.fetchWithTimeout(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
             body: JSON.stringify(formData)
-        });
+        }, 80000);
 
         if (response.status === 429) {
             return { success: false, error: 'Rate limit exceeded. Please wait before generating more keys.' };
@@ -596,16 +611,17 @@ class KeyJoltApp {
 
     async downloadFile(downloadUrl, filename) {
         try {
-            const response = await fetch(downloadUrl);
+            const response = await this.fetchWithTimeout(downloadUrl, {}, 30000);
 
             if (!response.ok) {
-                const contentType = response.headers.get('content-type') || '';
-                if (contentType.includes('application/json')) {
-                    const data = await response.json();
-                    console.error('Download failed:', data.error || 'Unknown error.');
-                    return;
+                // Key files are deleted 5 minutes after generation, so a 404
+                // here almost always means the link has expired (KJ-09).
+                if (response.status === 404 || response.status === 410) {
+                    this.showError('This download link has expired: keys are deleted 5 minutes after generation. Please generate a new key.');
+                } else {
+                    this.showError(`Download failed (HTTP ${response.status}). Please try again.`);
                 }
-                throw new Error(`Download failed with status ${response.status}`);
+                return;
             }
 
             const blob = await response.blob();
@@ -619,6 +635,9 @@ class KeyJoltApp {
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Download error:', error.message);
+            this.showError(error.name === 'AbortError'
+                ? 'The download took too long. Please try again.'
+                : 'Download failed. Please check your connection and try again.');
         }
     }
 
