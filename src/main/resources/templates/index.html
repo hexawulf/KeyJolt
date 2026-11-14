@@ -297,8 +297,8 @@
                     <h3><i data-feather="layers" class="about-icon"></i>Tech Stack</h3>
                     <h4>Backend:</h4>
                     <ul>
-                        <li><strong>Framework:</strong> Spring Boot 3.2.0</li>
-                        <li><strong>Language:</strong> Java 17</li>
+                        <li><strong>Framework:</strong> Spring Boot <span th:text="${springBootVersion}">4.1.2</span></li>
+                        <li><strong>Language:</strong> Java <span th:text="${javaVersion}">17</span></li>
                         <li><strong>Security:</strong> Spring Security with custom headers</li>
                         <li><strong>Cryptography:</strong> Bouncy Castle (PGP), Apache MINA sshd (SSH)</li>
                         <li><strong>Rate Limiting:</strong> Bucket4j</li>
@@ -330,7 +330,7 @@
                 </div>
                 <div class="about-section">
                     <h3><i data-feather="info" class="about-icon"></i>Version</h3>
-                    <p>1.2.0</p>
+                    <p><a th:href="@{https://github.com/hexawulf/KeyJolt/releases/tag/v{v}(v=${appVersion})}" th:text="${'v' + appVersion}" target="_blank" rel="noopener noreferrer">v1.2.1</a></p>
                 </div>
                 <div class="about-section">
                     <h3><i data-feather="calendar" class="about-icon"></i>Date</h3>
