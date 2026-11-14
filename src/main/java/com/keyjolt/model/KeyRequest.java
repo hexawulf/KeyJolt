@@ -1,5 +1,6 @@
 package com.keyjolt.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import jakarta.validation.constraints.*;
 import java.util.Set;
 
@@ -37,6 +38,10 @@ public class KeyRequest {
     private String password;
     
     // Default constructor
+    // Jackson 3 (Spring Boot 4) sees constructor parameter names and would bind
+    // JSON through the all-args constructor, turning omitted fields into null
+    // (400 for the boolean, lost defaults). Bind through setters instead.
+    @JsonCreator
     public KeyRequest() {}
     
     // Constructor with all fields

@@ -1,11 +1,11 @@
 # 🔐 KeyJolt
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Spring%20Boot-3.2.0-brightgreen?style=for-the-badge&logo=spring" alt="Spring Boot">
+  <img src="https://img.shields.io/badge/Spring%20Boot-4.1.2-brightgreen?style=for-the-badge&logo=spring" alt="Spring Boot">
   <img src="https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=java" alt="Java">
   <img src="https://img.shields.io/badge/Security-PGP%20%26%20SSH-blue?style=for-the-badge&logo=gnuprivacyguard" alt="Security">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Version-1.1.5-blue?style=for-the-badge" alt="Version 1.1.5">
+  <img src="https://img.shields.io/badge/Version-1.2.0-blue?style=for-the-badge" alt="Version 1.2.0">
 </div>
 
 <div align="center">
@@ -15,7 +15,14 @@
 
 ---
 
-## 🆕 What's New in v1.1.5
+## 🆕 What's New in v1.2.0
+
+- **Spring Boot 4.1** (from 3.5, whose open-source support ended on 2026-06-30). Still Java 17.
+  Same features, same responses and security headers; the request models now bind JSON through
+  setters, because Jackson 3 would otherwise use their all-args constructors and reject requests
+  that leave out optional fields.
+
+## What's New in v1.1.5
 
 - **Expired downloads say so.** Key files are deleted five minutes after generation; clicking a
   download after that now shows "This download link has expired" instead of doing nothing.
@@ -173,7 +180,7 @@ From v1.1.0:
 ## 🏗️ Tech Stack
 
 ### **Backend**
-- **Framework**: Spring Boot 3.2.0
+- **Framework**: Spring Boot 4.1.2 (Java 17)
 - **Language**: Java 17
 - **Security**: Spring Security with custom headers
 - **Cryptography**: Bouncy Castle (PGP), Apache MINA sshd-common (SSH)

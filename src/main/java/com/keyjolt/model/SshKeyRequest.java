@@ -1,5 +1,6 @@
 package com.keyjolt.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -27,6 +28,10 @@ public class SshKeyRequest {
     @Size(max = 256, message = "Passphrase must not exceed 256 characters")
     private String passphrase;
 
+    // Jackson 3 (Spring Boot 4) sees constructor parameter names and would bind
+    // JSON through the all-args constructor, turning omitted fields into null
+    // (400 for the boolean, lost defaults). Bind through setters instead.
+    @JsonCreator
     public SshKeyRequest() {}
 
     public SshKeyRequest(String keyType, String comment, String passphrase) {
