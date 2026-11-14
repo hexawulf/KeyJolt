@@ -63,6 +63,9 @@ public class KeyController {
     @Autowired
     private FileUtils fileUtils;
 
+    @Value("${app.version:dev}")
+    private String appVersion;
+
     @Value("${app.rate-limit.requests-per-hour:10}")
     private int requestsPerHour;
 
@@ -102,6 +105,10 @@ public class KeyController {
         logger.debug("Serving index page");
         model.addAttribute("keyRequest", new KeyRequest());
         model.addAttribute("encryptionStrengths", new int[]{2048, 3072, 4096});
+        // About modal: read from the build and the running JVM so it cannot go stale.
+        model.addAttribute("appVersion", appVersion);
+        model.addAttribute("springBootVersion", org.springframework.boot.SpringBootVersion.getVersion());
+        model.addAttribute("javaVersion", Runtime.version().feature());
         return "index";
     }
 

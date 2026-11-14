@@ -5,7 +5,7 @@
   <img src="https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=java" alt="Java">
   <img src="https://img.shields.io/badge/Security-PGP%20%26%20SSH-blue?style=for-the-badge&logo=gnuprivacyguard" alt="Security">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Version-1.2.0-blue?style=for-the-badge" alt="Version 1.2.0">
+  <img src="https://img.shields.io/badge/Version-1.2.1-blue?style=for-the-badge" alt="Version 1.2.1">
 </div>
 
 <div align="center">
@@ -15,7 +15,12 @@
 
 ---
 
-## 🆕 What's New in v1.2.0
+## 🆕 What's New in v1.2.1
+
+- **About shows the real versions.** The Spring Boot and Java versions come from the running
+  application, and the version links to its GitHub release tag (it said Spring Boot 3.2.0).
+
+## What's New in v1.2.0
 
 - **Spring Boot 4.1** (from 3.5, whose open-source support ended on 2026-06-30). Still Java 17.
   Same features, same responses and security headers; the request models now bind JSON through

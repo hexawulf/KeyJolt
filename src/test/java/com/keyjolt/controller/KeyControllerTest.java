@@ -346,4 +346,15 @@ class KeyControllerTest {
                 .andExpect(jsonPath("$.valid").value(false))
                 .andExpect(jsonPath("$.message").value("Email must not exceed 100 characters"));
     }
+
+    @Test
+    void aboutModalShowsTheRunningVersions() throws Exception {
+        String boot = org.springframework.boot.SpringBootVersion.getVersion();
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Spring Boot <span>" + boot + "</span>")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "href=\"https://github.com/hexawulf/KeyJolt/releases/tag/v1.2.1\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(">v1.2.1</a>")));
+    }
 }
