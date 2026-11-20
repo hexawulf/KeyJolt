@@ -1,6 +1,7 @@
 # 🔐 KeyJolt
 
 <div align="center">
+  <a href="https://github.com/hexawulf/KeyJolt/actions/workflows/ci.yml"><img src="https://github.com/hexawulf/KeyJolt/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/Spring%20Boot-4.1.2-brightgreen?style=for-the-badge&logo=spring" alt="Spring Boot">
   <img src="https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=java" alt="Java">
   <img src="https://img.shields.io/badge/Security-PGP%20%26%20SSH-blue?style=for-the-badge&logo=gnuprivacyguard" alt="Security">
