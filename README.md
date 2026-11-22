@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=java" alt="Java">
   <img src="https://img.shields.io/badge/Security-PGP%20%26%20SSH-blue?style=for-the-badge&logo=gnuprivacyguard" alt="Security">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Version-1.2.1-blue?style=for-the-badge" alt="Version 1.2.1">
+  <img src="https://img.shields.io/badge/Version-1.3.0-blue?style=for-the-badge" alt="Version 1.3.0">
 </div>
 
 <div align="center">
@@ -16,139 +16,30 @@
 
 ---
 
-## 🆕 What's New in v1.2.1
+## 📸 Screenshots
 
-- **About shows the real versions.** The Spring Boot and Java versions come from the running
-  application, and the version links to its GitHub release tag (it said Spring Boot 3.2.0).
+<p align="center">
+  <img src="docs/screenshots/keyjolt-home.png" alt="KeyJolt key generation form (PGP + SSH mode)" width="860">
+</p>
+<p align="center">
+  <img src="docs/screenshots/keyjolt-ssh-result.png" alt="SSH-only result: fingerprint, public key with Copy button and download cards" width="860">
+</p>
 
-## What's New in v1.2.0
+## 🆕 What's New in v1.3.0
 
-- **Spring Boot 4.1** (from 3.5, whose open-source support ended on 2026-06-30). Still Java 17.
-  Same features, same responses and security headers; the request models now bind JSON through
-  setters, because Jackson 3 would otherwise use their all-args constructors and reject requests
-  that leave out optional fields.
+- **Fixed: "Generate New Keys" and "Try Again" did nothing.** They were inline `onclick`
+  handlers that the app's own Content Security Policy blocks; they are now bound from the script.
+- **Accessible dialogs.** About, Security and Privacy are real dialogs (`role="dialog"`,
+  `aria-modal`); focus moves in, stays in on Tab, and returns on Escape, backdrop click or close.
+  Progress and errors are announced to screen readers; tooltips open on keyboard focus.
+- **Clearer errors** for a busy server (`503`, with the `Retry-After` wait), rate limits (`429`)
+  and invalid download links.
+- **About** shows `Erling Wulf Weinreich (0xWulf) · dev@0xwulf.dev`; the version comes from the build.
+- **Tests and CI:** 100 JUnit tests (new `PgpKeyServiceTest`, `HealthControllerTest`), a JaCoCo
+  gate of 80 % line coverage, a Playwright browser smoke suite in [`e2e/`](e2e/), a Trivy scan of
+  every library in the built JAR, and SHA-pinned GitHub Actions on Node 24.
 
-## What's New in v1.1.5
-
-- **Expired downloads say so.** Key files are deleted five minutes after generation; clicking a
-  download after that now shows "This download link has expired" instead of doing nothing.
-- **No endless spinner.** Requests time out (generation 80 s, download 30 s, validation 10 s)
-  with a message instead of hanging.
-- **Denied requests are logged.** The request log now runs before Spring Security, so 403s
-  (scanners probing `/wp-login.php` and the like) show up in the log.
-
-## What's New in v1.1.4
-
-A security and robustness patch:
-- **Fixed: the SSH private key was not password-protected in combined mode.** With "also generate
-  an SSH key" ticked, the password encrypted only the PGP key. It now encrypts the SSH private
-  key too (OpenSSH format, bcrypt KDF + AES-256-CTR).
-- **Generation is capped.** At most two RSA generations run at once (`app.generation.max-concurrent`);
-  further requests wait up to five seconds and then get `503` with `Retry-After`, without losing
-  a rate-limit token.
-- **Less in the logs.** Download tokens, file names and e-mail addresses are no longer logged, and
-  the unused default Spring Security user (with its generated password) is gone.
-- **HSTS** is now actually sent (the app only sees plain HTTP behind the reverse proxy).
-- **Input limits.** E-mail addresses are limited to 100 characters; names accept plain spaces
-  only, no tabs or line breaks.
-- Rate-limit buckets of idle clients are evicted again (slow memory leak).
-- Dependencies: Spring Boot 3.2.0 → 3.5.16, BouncyCastle 1.80 → 1.87, bucket4j 7.6 → 8.22,
-  SpotBugs plugin 4.10.5.
-
-## 🆕 What's New in v1.1.3
-
-A security patch:
-- **Fixed: private keys could stay on disk after a restart.** Key files are deleted by a timer
-  five minutes after generation. When the app stopped inside that window the timers were dropped
-  and the files were never removed. On shutdown the app now deletes all pending key files at once,
-  and on startup it removes anything a previous run left behind (crash, `kill -9`, power loss).
-  Only KeyJolt's own per-request directories are touched.
-- Shutdown no longer waits five seconds for the timers.
-
-## 🆕 What's New in v1.1.2
-
-A reliability and speed patch:
-- **Fixed: every key generation failed with HTTP 500 once the temp directory was removed.**
-  `app.temp-dir` defaults to `/tmp/keyjolt`, which is empty between requests, so tmp cleaners that
-  prune empty directories delete it. Since v1.1.1 it was only created at startup. It is now
-  re-created (still `0700`) on demand.
-- **Faster PGP generation.** The master key, the encryption subkey and the optional SSH RSA key are
-  generated in parallel instead of one after another.
-- **Faster page loads.** Static assets are cacheable for 7 days (CSS/JS URLs carry a content hash),
-  templates are cached, and scripts no longer block rendering.
-
-## 🆕 What's New in v1.1.1
-
-A hardening patch on top of v1.1.0:
-- **Private temp storage.** The key directory (`app.temp-dir`) and every per-request token
-  directory are now `0700`, so other local users on the host can't list request tokens.
-- **Per-client rate limiting behind a proxy.** With `app.trusted-proxy=true`, the client is identified by
-  `X-Real-IP`, which the proxy overwrites. If that header is missing, only the **last** `X-Forwarded-For` hop
-  (the one our proxy appended) is used. The first hop is client-controlled and is no longer trusted, so
-  rotating a fake `X-Forwarded-For` doesn't get around the limit. Production (nginx behind Cloudflare,
-  with `real_ip_header CF-Connecting-IP`) now runs with `--app.trusted-proxy=true`. Before this,
-  every visitor counted as `127.0.0.1` and shared one bucket.
-- **Tests no longer write into the production temp directory.** They use `target/test-keys`.
-
-## 🆕 What's New in v1.1.0
-
-### 🔑 SSH-only mode
-KeyJolt can now generate **just an SSH key pair**, with no PGP key, name or email needed.
-Pick **SSH only** in the toggle at the top of the form (or open [`keyjolt.dev/#ssh`](https://keyjolt.dev/#ssh)):
-
-| Field | Options |
-|---|---|
-| **Key type** | **Ed25519** (default, recommended) or **RSA 4096** for legacy systems |
-| **Comment** | Optional, e.g. `you@laptop`, appended to the public key |
-| **Passphrase** | Optional (8+ characters), encrypts the private key |
-
-You get `id_ed25519` + `id_ed25519.pub` (or `id_rsa` + `id_rsa.pub`), the key's
-`SHA256:` fingerprint, and a one-click **Copy** button for the public key line.
-
-```bash
-# after downloading
-chmod 600 ~/Downloads/id_ed25519
-mv ~/Downloads/id_ed25519 ~/Downloads/id_ed25519.pub ~/.ssh/
-ssh-keygen -lf ~/.ssh/id_ed25519.pub   # fingerprint matches the one KeyJolt showed
-```
-
-**Under the hood:**
-- Keys are written in the modern **OpenSSH format** (`-----BEGIN OPENSSH PRIVATE KEY-----`)
-  by [Apache MINA sshd](https://mina.apache.org/sshd-project/), replacing JSch, which cannot
-  write Ed25519 private keys.
-- A passphrase uses **bcrypt KDF + AES-256-CTR**, the same as `ssh-keygen`'s default.
-- Every key type, with and without a passphrase, is cross-checked against `ssh-keygen` in the test suite.
-- The combined **PGP + SSH** mode is unchanged, but its SSH key now also uses the OpenSSH
-  format, and its comment is your email address.
-
-New endpoint for scripts:
-
-```bash
-curl -s -X POST https://keyjolt.dev/api/generate/ssh \
-  -H 'Content-Type: application/json' \
-  -d '{"keyType":"ed25519","comment":"you@laptop"}'
-# → { "success": true, "fingerprint": "SHA256:…", "publicKey": "ssh-ed25519 AAAA… you@laptop",
-#     "files": [ { "filename": "id_ed25519.pub", "downloadUrl": "/download/<token>/id_ed25519.pub", … },
-#                { "filename": "id_ed25519",     "downloadUrl": "/download/<token>/id_ed25519", … } ] }
-```
-
-### 🛡️ Safer download URLs
-In v1.0.x a download link was built only from the key's metadata
-(`/download/email_name_seckey_KEYID.asc`). Anyone who could guess or observe those
-values could fetch someone else's private key during its 5-minute window.
-
-From v1.1.0:
-- **Unguessable links.** Every generation request gets its own directory named by a random
-  **128-bit token** from `SecureRandom`, and links look like `/download/<32-hex-token>/<filename>`.
-  Knowing a name, email or key ID is no longer enough to download anything.
-- **No clashes.** Two people generating `id_ed25519` at the same moment get separate directories.
-- **Strict validation.** The token must be exactly 32 lowercase hex characters, and the filename must
-  match a short allow-list (`A-Z a-z 0-9 @ . _ + -`). The resolved path must stay inside that request's
-  directory, so anything else is rejected with `400` before the filesystem is touched.
-- **`Cache-Control: no-store`** on every download, so browsers and proxies don't keep copies of keys.
-- **Private key files are created `0600`** on the server, then overwritten with random data and deleted
-  after 5 minutes as before. The empty request directory is removed with them.
-- The old `/download/{filename}` route is gone.
+Older releases: see [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -286,6 +177,19 @@ your environment. **Do not** commit secrets to version control.
 3. **Optionally add a comment and a passphrase**
 4. **Click "Generate SSH Key"**, then copy the public key or download both files
 
+### API (for scripts)
+
+```bash
+curl -s -X POST https://keyjolt.dev/api/generate/ssh \
+  -H 'Content-Type: application/json' \
+  -d '{"keyType":"ed25519","comment":"you@laptop"}'
+# → { "success": true, "fingerprint": "SHA256:…", "publicKey": "ssh-ed25519 AAAA… you@laptop",
+#     "files": [ { "filename": "id_ed25519.pub", "downloadUrl": "/download/<token>/id_ed25519.pub", … },
+#                { "filename": "id_ed25519",     "downloadUrl": "/download/<token>/id_ed25519", … } ] }
+```
+
+Download links work for 5 minutes after generation; then the files are overwritten and deleted.
+
 ### File Naming Convention
 
 Generated files follow this pattern:
@@ -299,6 +203,29 @@ All files are served from `/download/<request-token>/<filename>`.
 
 ---
 
+## 🧪 Testing
+
+```bash
+# Unit + integration tests, JaCoCo report and 80 % line-coverage gate, SpotBugs, package
+mvn -B verify
+# Coverage report: target/site/jacoco/index.html
+
+# Browser smoke tests (Playwright, Chromium) against the JAR just built
+cd e2e
+npm ci
+npx playwright install chromium
+npm run test:e2e        # boots target/keyjolt-*.jar on 127.0.0.1:5095 with its own temp/log dirs,
+                        # stops it with SIGTERM, fails if a key file or download token survives
+npm run test:e2e:live   # read-only checks against https://keyjolt.dev (never generates keys)
+npm run screenshots     # refreshes docs/screenshots/*.png
+```
+
+CI (`.github/workflows/ci.yml`) runs all three stages on every pull request and push to `main`:
+Maven verify, a Trivy scan of the built JAR (fails on fixable CRITICAL findings), and the
+Playwright suite against that JAR.
+
+---
+
 ## 🏛️ Architecture
 
 ### Project Structure
@@ -307,9 +234,11 @@ keyjolt/
 ├── src/main/java/com/keyjolt/
 │   ├── KeyjoltApplication.java          # Spring Boot main class
 │   ├── config/
-│   │   └── SecurityConfig.java          # Security configuration
+│   │   ├── SecurityConfig.java          # Security headers, CSP, route allow-list
+│   │   └── RequestLoggingFilter.java    # Request log (download paths redacted)
 │   ├── controller/
-│   │   └── KeyController.java           # REST endpoints
+│   │   ├── KeyController.java           # Generation, download and validation endpoints
+│   │   └── HealthController.java        # GET /healthz
 │   ├── service/
 │   │   ├── PgpKeyService.java          # PGP key generation
 │   │   └── SshKeyService.java          # SSH key generation
@@ -326,6 +255,9 @@ keyjolt/
 │   │   ├── css/style.css              # Styling
 │   │   └── js/script.js               # Frontend logic
 │   └── application.properties          # Configuration
+├── src/test/java/com/keyjolt/          # JUnit 5 tests (JaCoCo-gated)
+├── e2e/                                # Playwright smoke suite (Node, separate from Maven)
+├── docs/screenshots/                   # README screenshots
 └── pom.xml                            # Maven dependencies
 ```
 
@@ -350,7 +282,7 @@ keyjolt/
 - Set `SPRING_PROFILES_ACTIVE=production` for production builds
 
 ### **Key Safety**
-- Private keys are generated server-side and immediately deleted
+- Private keys are generated server-side and deleted 5 minutes after generation (and on every restart)
 - No keys are logged or permanently stored
 - Users must download keys immediately
 - Secure random number generation used throughout
@@ -380,7 +312,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👨‍💻 Author
 
-**0xWulf**
+**Erling Wulf Weinreich (0xWulf)**
 - Email: dev@0xwulf.dev
 - GitHub: [@hexawulf](https://github.com/hexawulf)
 

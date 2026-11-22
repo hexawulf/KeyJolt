@@ -6,7 +6,8 @@ We actively support the following versions with security updates:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.2.x   | :white_check_mark: |
+| 1.3.x   | :white_check_mark: |
+| 1.2.x   | :white_check_mark: (until 1.4.0) |
 | < 1.2   | :x:                |
 
 ## Reporting a Vulnerability
@@ -46,11 +47,30 @@ KeyJolt implements multiple security layers:
 - **Key Strength**: Supports 2048, 3072, and 4096-bit RSA keys
 - **Secure Deletion**: Files overwritten with random data before deletion
 
-#### Infrastructure Security
-- **Automatic Cleanup**: Generated keys deleted after 5 minutes
-- **No Persistence**: Keys never stored permanently
-- **Memory Management**: Secure handling of sensitive data in memory
-- **File System**: Restricted access to temporary file directories
+#### Ephemeral Key Handling
+- **Per-request directories**: every generation request gets its own directory named by a
+  random 128-bit token (`/download/<token>/<filename>`), created with mode `0700`; the base
+  temp directory is `0700` too, and private key files are created `0600`.
+- **5-minute TTL**: each key file is overwritten with random data and deleted 5 minutes
+  (`app.key-cleanup-delay`) after it was generated. Downloads within that window are allowed;
+  afterwards the link answers `404`.
+- **Startup and shutdown purge**: on a clean stop (`SIGTERM`) all pending key files are wiped
+  immediately; on startup any leftovers from a crash or `kill -9` are wiped before the app
+  serves requests. Only token-named directories are touched; symlinks are never followed.
+- **No persistence**: keys are never stored outside that temp directory, and never in a database.
+
+#### Abuse Protection
+- **Rate limiting**: per client, 10 generations/hour with a burst of 5 (Bucket4j). Behind a
+  trusted reverse proxy (`app.trusted-proxy=true`) the client is taken from `X-Real-IP`, else
+  the last `X-Forwarded-For` hop; otherwise proxy headers are ignored.
+- **Concurrency cap**: at most 2 RSA generations run at once (`app.generation.max-concurrent`);
+  further requests wait up to 5 s and then get `503` with `Retry-After: 10`, without losing a
+  rate-limit token.
+
+#### Logging
+- Download tokens, file names, e-mail addresses, passphrases and key material are never
+  logged. Download paths are redacted to `/download/<redacted>` in the request log. A unit test
+  (`LogPrivacyTest`) enforces this.
 
 ### Known Security Considerations
 
@@ -60,9 +80,9 @@ KeyJolt implements multiple security layers:
 - Network transmission of generated keys (use HTTPS in production)
 
 #### Mitigations
-- Immediate secure deletion after download
-- Rate limiting prevents automated abuse
-- No logging of key material
+- Secure deletion 5 minutes after generation, and on every restart
+- Rate limiting and a concurrency cap prevent automated abuse
+- No logging of key material, tokens or personal data
 - Secure random number generation
 
 ### Security Best Practices for Users
