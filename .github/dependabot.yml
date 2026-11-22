@@ -4,6 +4,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Taipei
     groups:
       minor-and-patch:
         update-types:
@@ -14,3 +17,25 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Taipei
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Playwright smoke suite (e2e/ only; the app itself has no Node dependencies)
+  - package-ecosystem: npm
+    directory: /e2e
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Asia/Taipei
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
