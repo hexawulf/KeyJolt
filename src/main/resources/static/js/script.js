@@ -27,10 +27,13 @@ class KeyJoltApp {
         this.securityLink = document.querySelector('a[href="#security"]');
         this.privacyLink = document.querySelector('a[href="#privacy"]');
 
-        this.closeAboutModalBtn = this.aboutModal ? this.aboutModal.querySelector('.modal-close') : null; // Existing about modal close
+        this.closeAboutModalBtn = this.aboutModal ? this.aboutModal.querySelector('.modal-close') : null;
         this.securityModalCloseBtn = this.securityModal ? this.securityModal.querySelector('.close-button') : null;
         this.privacyModalCloseBtn = this.privacyModal ? this.privacyModal.querySelector('.close-button') : null;
-        
+
+        // Screen-reader announcements for long-running generation
+        this.generationStatus = document.getElementById('generationStatus');
+
         this.validationTimeouts = {};
         this.isGenerating = false;
         
@@ -153,64 +156,69 @@ class KeyJoltApp {
         }
     }
 
-    // Generic Modal Handling
-    openModal(modalElement) {
+    // Generic modal handling: role="dialog" + aria-modal in the markup;
+    // here focus moves in, is trapped, and returns to the trigger on close.
+    openModal(modalElement, trigger) {
         if (!modalElement) return;
 
-        // Close any other open modals first
         document.querySelectorAll('.modal.modal-open').forEach(m => {
-            if (m !== modalElement) {
-                // Assuming closeModal handles the actual hiding and class removal
-                this.closeModal(m);
-            }
+            if (m !== modalElement) this.closeModal(m, false);
         });
 
-        // Show the modal
+        modalElement.returnFocusTo = trigger || document.activeElement;
+        modalElement.hidden = false;
         modalElement.classList.add('modal-open');
-        // modalElement.style.display = 'flex'; // Ensure it shows - CSS .modal.modal-open handles this with !important
+        document.body.classList.add('modal-locked');
 
-        // Focus management
-        // Attempt to focus the first focusable element in the modal
-        const focusable = modalElement.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        if (focusable) {
-            focusable.focus();
-        } else { // Fallback if no focusable element is found
-            modalElement.setAttribute('tabindex', '-1'); // Ensure modal itself is focusable
+        const focusable = this.focusableIn(modalElement);
+        if (focusable.length) {
+            focusable[0].focus();
+        } else {
+            modalElement.setAttribute('tabindex', '-1');
             modalElement.focus();
         }
-
-        // Store the trigger link if available (assuming it's set on modalElement by initModals)
-        // This part depends on how `triggerLink` is associated with modalElement.
-        // If `this.activeModalTrigger` is the way to store it:
-        // this.activeModalTrigger = modalElement.triggerLink; // or however the trigger is passed/stored
     }
 
-    closeModal(modalElement) {
-        if (!modalElement) return;
-
-        const triggerLink = modalElement.triggerLink; // Assuming triggerLink is a property of modalElement
+    closeModal(modalElement, restoreFocus = true) {
+        if (!modalElement || modalElement.hidden) return;
 
         modalElement.classList.remove('modal-open');
-        modalElement.style.display = 'none'; // Ensure it hides
-
-        // Restore focus to the trigger link if it exists and is part of the document
-        if (triggerLink && document.body.contains(triggerLink)) {
-            triggerLink.focus();
-        } else {
-            // Fallback focus if triggerLink is not available or not in DOM
-            // This might be the case if modal was closed by ESC or backdrop click
-            // Or if triggerLink was not correctly associated.
-            // Focusing body or a relevant container can be a fallback.
-            // For now, we rely on the triggerLink being correctly set.
+        modalElement.hidden = true;
+        if (!document.querySelector('.modal.modal-open')) {
+            document.body.classList.remove('modal-locked');
         }
 
-        // If this.activeModal was used to track the currently open modal
-        // if (this.activeModal === modalElement) {
-        //     this.activeModal = null;
-        //     this.activeModalTrigger = null;
-        // }
+        const target = modalElement.returnFocusTo;
+        modalElement.returnFocusTo = null;
+        if (restoreFocus && target && document.body.contains(target) && typeof target.focus === 'function') {
+            target.focus();
+        }
     }
-    
+
+    focusableIn(container) {
+        return Array.from(container.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )).filter(el => !el.hidden && el.offsetParent !== null);
+    }
+
+    // Keep Tab / Shift+Tab inside the open dialog
+    trapFocus(event, modalElement) {
+        const focusable = this.focusableIn(modalElement);
+        if (!focusable.length) {
+            event.preventDefault();
+            return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    }
+
     setupEventListeners() {
         // Form submission
         this.form.addEventListener('submit', (e) => this.handleFormSubmit(e));
@@ -230,6 +238,12 @@ class KeyJoltApp {
             passwordInput.addEventListener('blur', () => this.validatePasswordField(passwordInput));
         }
         
+        // "Generate New Keys" / "Try Again": bound here because the CSP
+        // (script-src 'self') blocks inline onclick handlers.
+        document.querySelectorAll('.js-reset').forEach(btn => {
+            btn.addEventListener('click', () => window.resetForm());
+        });
+
         // Prevent form submission while generating
         this.form.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && this.isGenerating) {
@@ -242,19 +256,28 @@ class KeyJoltApp {
         const tooltipTriggers = document.querySelectorAll('.tooltip-trigger');
         const tooltip = document.getElementById('tooltip');
         
+        if (!tooltip) return;
+
+        const show = (trigger) => {
+            const tooltipText = trigger.getAttribute('data-tooltip');
+            if (tooltipText) {
+                tooltip.textContent = tooltipText;
+                this.positionTooltip(trigger, tooltip);
+                tooltip.classList.add('show');
+            }
+        };
+        const hide = () => tooltip.classList.remove('show');
+
         tooltipTriggers.forEach(trigger => {
-            trigger.addEventListener('mouseenter', (e) => {
-                const tooltipText = trigger.getAttribute('data-tooltip');
-                if (tooltipText) {
-                    tooltip.textContent = tooltipText;
-                    this.positionTooltip(e.target, tooltip);
-                    tooltip.classList.add('show');
-                }
-            });
-            
-            trigger.addEventListener('mouseleave', () => {
-                tooltip.classList.remove('show');
-            });
+            // Keyboard and screen-reader users get the same help text
+            if (!trigger.hasAttribute('aria-label')) {
+                trigger.setAttribute('aria-label', trigger.getAttribute('data-tooltip') || 'Help');
+            }
+            trigger.setAttribute('role', 'note');
+            trigger.addEventListener('mouseenter', () => show(trigger));
+            trigger.addEventListener('mouseleave', hide);
+            trigger.addEventListener('focus', () => show(trigger));
+            trigger.addEventListener('blur', hide);
         });
     }
     
@@ -303,11 +326,11 @@ class KeyJoltApp {
                     body: `field=${encodeURIComponent(field)}&value=${encodeURIComponent(value)}`
                 });
                 
+                if (!response.ok) return; // e.g. rate limited: keep the client-side checks only
                 const result = await response.json();
                 this.updateFieldValidation(field, result.valid, result.message);
-                
-            } catch (error) {
-                console.error('Validation error:', error);
+            } catch (_) {
+                // Live validation is a convenience; the server validates again on submit.
             }
         }, 300);
     }
@@ -370,7 +393,6 @@ class KeyJoltApp {
             }
             
         } catch (error) {
-            console.error('Generation error:', error);
             if (error.name === 'AbortError') {
                 this.showError('The server took too long to answer. Please try again.');
             } else if (error instanceof TypeError && error.message === 'Failed to fetch') {
@@ -472,7 +494,13 @@ class KeyJoltApp {
         }, 80000);
 
         if (response.status === 429) {
-            return { success: false, error: 'Rate limit exceeded. Please wait before generating more keys.' };
+            return { success: false, error: 'Rate limit exceeded: at most 10 key generations per hour and 5 per minute. Please wait before generating more keys.' };
+        }
+
+        if (response.status === 503) {
+            const retry = parseInt(response.headers.get('Retry-After'), 10);
+            const wait = Number.isFinite(retry) && retry > 0 ? `${retry} seconds` : 'a few seconds';
+            return { success: false, error: `The server is busy generating other keys. Please try again in ${wait}.` };
         }
 
         if (!response.ok) {
@@ -490,6 +518,10 @@ class KeyJoltApp {
         this.isGenerating = true;
         this.generateBtn.disabled = true;
         this.generateBtn.classList.add('loading');
+        this.generateBtn.setAttribute('aria-busy', 'true');
+        this.announce(this.getMode() === 'ssh'
+            ? 'Generating your SSH key…'
+            : 'Generating your keys. RSA keys can take up to a minute…');
         
         // Disable form inputs
         const inputs = this.form.querySelectorAll('input, select, button');
@@ -500,12 +532,19 @@ class KeyJoltApp {
         this.isGenerating = false;
         this.generateBtn.disabled = false;
         this.generateBtn.classList.remove('loading');
+        this.generateBtn.removeAttribute('aria-busy');
         
         // Re-enable form inputs
         const inputs = this.form.querySelectorAll('input, select, button');
         inputs.forEach(input => input.disabled = false);
     }
     
+    announce(text) {
+        if (this.generationStatus) {
+            this.generationStatus.textContent = text;
+        }
+    }
+
     showSuccess(response) {
         this.successMessage.textContent = response.message;
         if (response.publicKey) {
@@ -516,27 +555,29 @@ class KeyJoltApp {
             this.sshSummary.hidden = true;
         }
         this.renderDownloadLinks(response.files);
-        this.resultsSection.style.display = 'block';
+        this.announce('');
+        this.resultsSection.hidden = false;
         this.resultsSection.classList.add('fade-in');
         this.resultsSection.scrollIntoView({ behavior: 'smooth' });
     }
     
     showError(errorText) {
         this.errorMessage.textContent = errorText;
-        this.errorSection.style.display = 'block';
+        this.announce('');
+        this.errorSection.hidden = false;
         this.errorSection.classList.add('fade-in');
         this.errorSection.scrollIntoView({ behavior: 'smooth' });
     }
     
     hideResults() {
-        this.resultsSection.style.display = 'none';
-        this.errorSection.style.display = 'none';
+        this.resultsSection.hidden = true;
+        this.errorSection.hidden = true;
         this.resultsSection.classList.remove('fade-in');
         this.errorSection.classList.remove('fade-in');
     }
     
     renderDownloadLinks(files) {
-        this.downloadGrid.innerHTML = '';
+        this.downloadGrid.replaceChildren();
         
         const fileTypeInfo = {
             'pgp_public': {
@@ -567,34 +608,46 @@ class KeyJoltApp {
                 icon: 'file',
                 description: 'Generated key file'
             };
-            
-            const downloadItem = document.createElement('div');
-            downloadItem.className = 'download-item';
-            downloadItem.innerHTML = `
-                <div class="download-header">
-                    <i data-feather="${typeInfo.icon}" class="download-icon"></i>
-                    <h3 class="download-title">${typeInfo.title}</h3>
-                </div>
-                <div class="download-info">
-                    ${typeInfo.description}<br>
-                    <strong>File:</strong> ${file.filename}<br>
-                    <strong>Size:</strong> ${this.formatFileSize(file.size)}
-                </div>
-                <a href="${file.downloadUrl}" class="download-link" data-filename="${file.filename}">
-                    <i data-feather="download" class="download-link-icon"></i>
-                    Download
-                </a>
-            `;
 
-            this.downloadGrid.appendChild(downloadItem);
+            const el = (tag, className, text) => {
+                const node = document.createElement(tag);
+                if (className) node.className = className;
+                if (text !== undefined) node.textContent = text;
+                return node;
+            };
+            const icon = (name, className) => {
+                const i = el('i', className);
+                i.setAttribute('data-feather', name);
+                i.setAttribute('aria-hidden', 'true');
+                return i;
+            };
 
-            const link = downloadItem.querySelector('.download-link');
+            const downloadItem = el('div', 'download-item');
+
+            const header = el('div', 'download-header');
+            header.append(icon(typeInfo.icon, 'download-icon'), el('h3', 'download-title', typeInfo.title));
+
+            const info = el('div', 'download-info');
+            info.append(
+                document.createTextNode(typeInfo.description), el('br'),
+                el('strong', null, 'File:'), document.createTextNode(' ' + file.filename), el('br'),
+                el('strong', null, 'Size:'), document.createTextNode(' ' + this.formatFileSize(file.size))
+            );
+
+            const link = el('a', 'download-link');
+            link.href = file.downloadUrl;
+            link.dataset.filename = file.filename;
+            link.setAttribute('aria-label', `Download ${typeInfo.title} (${file.filename})`);
+            link.append(icon('download', 'download-link-icon'), document.createTextNode(' Download'));
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 this.downloadFile(file.downloadUrl, file.filename);
             });
+
+            downloadItem.append(header, info, link);
+            this.downloadGrid.appendChild(downloadItem);
         });
-        
+
         // Re-initialize Feather icons for new elements
         if (typeof feather !== 'undefined') {
             feather.replace();
@@ -618,6 +671,8 @@ class KeyJoltApp {
                 // here almost always means the link has expired (KJ-09).
                 if (response.status === 404 || response.status === 410) {
                     this.showError('This download link has expired: keys are deleted 5 minutes after generation. Please generate a new key.');
+                } else if (response.status === 400) {
+                    this.showError('This download link is not valid. Please generate a new key.');
                 } else {
                     this.showError(`Download failed (HTTP ${response.status}). Please try again.`);
                 }
@@ -634,7 +689,6 @@ class KeyJoltApp {
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error('Download error:', error.message);
             this.showError(error.name === 'AbortError'
                 ? 'The download took too long. Please try again.'
                 : 'Download failed. Please check your connection and try again.');
@@ -650,35 +704,31 @@ class KeyJoltApp {
 
         modalsMap.forEach(item => {
             if (item.link && item.modal) {
-                item.modal.triggerLink = item.link; // Store trigger link
+                item.link.setAttribute('aria-haspopup', 'dialog');
                 item.link.addEventListener('click', (e) => {
                     e.preventDefault();
-                    this.openModal(item.modal);
+                    this.openModal(item.modal, item.link);
                 });
             }
             if (item.closeBtn && item.modal) {
-                item.closeBtn.addEventListener('click', () => {
-                    this.closeModal(item.modal);
+                item.closeBtn.addEventListener('click', () => this.closeModal(item.modal));
+            }
+            if (item.modal) {
+                // Backdrop click (outside the dialog content) closes it
+                item.modal.addEventListener('click', (event) => {
+                    if (event.target === item.modal) this.closeModal(item.modal);
                 });
             }
         });
 
-        // Window click to close any open modal
-        window.addEventListener('click', (event) => {
-            document.querySelectorAll('.modal.modal-open').forEach(modal => {
-                if (event.target === modal) { // Clicked on the modal backdrop
-                    this.closeModal(modal);
-                }
-            });
-        });
-
-        // Escape key to close any open modal
-        window.addEventListener('keydown', (event) => {
+        document.addEventListener('keydown', (event) => {
+            const openModal = document.querySelector('.modal.modal-open');
+            if (!openModal) return;
             if (event.key === 'Escape') {
-                const openModal = document.querySelector('.modal.modal-open');
-                if (openModal) {
-                    this.closeModal(openModal);
-                }
+                event.preventDefault();
+                this.closeModal(openModal);
+            } else if (event.key === 'Tab') {
+                this.trapFocus(event, openModal);
             }
         });
     }

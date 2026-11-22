@@ -347,14 +347,18 @@ class KeyControllerTest {
                 .andExpect(jsonPath("$.message").value("Email must not exceed 100 characters"));
     }
 
+    @org.springframework.beans.factory.annotation.Value("${app.version}")
+    private String appVersion; // filtered from pom.xml <version> at build time
+
     @Test
     void aboutModalShowsTheRunningVersions() throws Exception {
         String boot = org.springframework.boot.SpringBootVersion.getVersion();
+        org.junit.jupiter.api.Assertions.assertTrue(appVersion.matches("^\\d+\\.\\d+\\.\\d+$"), appVersion);
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("Spring Boot <span>" + boot + "</span>")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString(
-                        "href=\"https://github.com/hexawulf/KeyJolt/releases/tag/v1.2.1\"")))
-                .andExpect(content().string(org.hamcrest.Matchers.containsString(">v1.2.1</a>")));
+                        "href=\"https://github.com/hexawulf/KeyJolt/releases/tag/v" + appVersion + "\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(">v" + appVersion + "</a>")));
     }
 }
