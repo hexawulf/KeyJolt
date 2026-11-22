@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="KeyJolt KJ Logo">
+  <defs>
+    <linearGradient id="kj-teal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#14b8a6" />
+      <stop offset="100%" stop-color="#0d9488" />
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="56" ry="56" fill="url(#kj-teal)" />
+  <text
+    x="128"
+    y="134"
+    fill="#ffffff"
+    font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+    font-size="112"
+    font-weight="800"
+    letter-spacing="-4"
+    text-anchor="middle"
+    dominant-baseline="central"
+  >KJ</text>
+</svg>

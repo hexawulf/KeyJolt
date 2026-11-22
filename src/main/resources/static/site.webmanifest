@@ -3,8 +3,8 @@
   "short_name": "KeyJolt",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "background_color": "#f8fafc",
+  "theme_color": "#0d9488",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

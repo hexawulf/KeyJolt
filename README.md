@@ -55,7 +55,7 @@ Older releases: see [CHANGELOG.md](CHANGELOG.md).
 
 ### 🎨 **Modern UI/UX**
 - **Responsive Design**: Mobile-first approach with clean, minimal interface
-- **Twitter Blue Theme**: Professional color scheme with accessibility features
+- **0xWulf Teal Theme**: Clean minimal aesthetic with the canonical teal accent palette (`#14B8A6` / `#0D9488`)
 - **Real-time Validation**: Live form validation with clear error messages
 - **Progress Indicators**: Loading states and generation progress feedback
 - **Tooltips**: Helpful explanations for technical concepts

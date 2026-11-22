@@ -34,7 +34,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/", "/api/generate", "/api/generate/ssh", "/api/validate",
                     "/css/**", "/js/**", "/images/**",
-                    "/favicon.ico", "/favicon-16x16.png", "/favicon-32x32.png",
+                    "/favicon.svg", "/favicon.ico", "/favicon-16x16.png", "/favicon-32x32.png",
                     "/apple-touch-icon.png", "/android-chrome-*.png",
                     "/site.webmanifest", "/robots.txt",
                     "/download/**"
