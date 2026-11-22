@@ -334,6 +334,15 @@
                     <p><a th:href="@{https://github.com/hexawulf/KeyJolt/releases/tag/v{v}(v=${appVersion})}" th:text="${'v' + appVersion}" target="_blank" rel="noopener noreferrer">v1.3.0</a></p>
                 </div>
                 <div class="about-section">
+                    <h3><i data-feather="zap" class="about-icon"></i>What's New in <span th:text="${'v' + appVersion}">v1.3.0</span></h3>
+                    <ul>
+                        <li>Fixed &ldquo;Generate New Keys&rdquo; and &ldquo;Try Again&rdquo; reset buttons under strict CSP (zero inline handlers)</li>
+                        <li>Accessible dialogs with keyboard focus management, Escape/backdrop close, and screen-reader announcements</li>
+                        <li>Clearer error messages for rate-limit (429), busy (503), and expired download links</li>
+                        <li>Expanded cryptographic &amp; browser verification (101 JUnit tests, JaCoCo coverage gate, Playwright E2E, Trivy JAR scan)</li>
+                    </ul>
+                </div>
+                <div class="about-section">
                     <h3><i data-feather="calendar" class="about-icon"></i>Date</h3>
                     <p>November 2026</p>
                 </div>
