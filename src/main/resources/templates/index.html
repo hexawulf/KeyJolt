@@ -43,7 +43,7 @@
                         <i data-feather="shield" class="info-icon"></i>
                         <h2>Generate Secure PGP & SSH Keys</h2>
                     </div>
-                    <p>Create cryptographically secure PGP and SSH key pairs instantly. Your private keys are generated securely and automatically deleted after download.</p>
+                    <p>Create cryptographically secure PGP and SSH key pairs instantly. Your private keys are generated securely and automatically deleted from the server 5 minutes after generation.</p>
                     
                     <div class="features">
                         <div class="feature">
@@ -60,7 +60,7 @@
                         </div>
                         <div class="feature">
                             <i data-feather="trash-2" class="feature-icon"></i>
-                            <span>Automatic cleanup after download</span>
+                            <span>Automatic cleanup after 5 minutes</span>
                         </div>
                     </div>
                 </div>
@@ -88,9 +88,9 @@
                                 Full Name
                             </label>
                             <input type="text" id="name" name="name" class="form-input" 
-                                   placeholder="Enter your full name" required maxlength="50">
+                                   placeholder="Enter your full name" required maxlength="50" aria-describedby="nameError">
                             <div class="field-help">Used for key identification. Spaces are allowed.</div>
-                            <div class="field-error" id="nameError"></div>
+                            <div class="field-error" id="nameError" aria-live="polite"></div>
                         </div>
 
                         <!-- Email Field -->
@@ -100,9 +100,9 @@
                                 Email Address
                             </label>
                             <input type="email" id="email" name="email" class="form-input" 
-                                   placeholder="your.email@example.com" required>
+                                   placeholder="your.email@example.com" required aria-describedby="emailError">
                             <div class="field-help">Associated with your key pair for identification.</div>
-                            <div class="field-error" id="emailError"></div>
+                            <div class="field-error" id="emailError" aria-live="polite"></div>
                         </div>
 
                         <!-- Encryption Strength Field -->
@@ -110,7 +110,7 @@
                             <label for="encryptionStrength" class="form-label">
                                 <i data-feather="cpu" class="label-icon"></i>
                                 Encryption Strength
-                                <span class="tooltip-trigger" data-tooltip="Higher bit strength provides better security but slower key generation. 4096 bits is recommended for maximum security.">
+                                <span class="tooltip-trigger" tabindex="0" data-tooltip="Higher bit strength provides better security but slower key generation. 4096 bits is recommended for maximum security.">
                                     <i data-feather="help-circle" class="help-icon"></i>
                                 </span>
                             </label>
@@ -128,14 +128,14 @@
                             <label for="keyExpiry" class="form-label">
                                 <i data-feather="calendar" class="label-icon"></i>
                                 Key Expiry (Days)
-                                <span class="tooltip-trigger" data-tooltip="0 means the key never expires. Set a value between 1-3650 days for automatic expiration.">
+                                <span class="tooltip-trigger" tabindex="0" data-tooltip="0 means the key never expires. Set a value between 1-3650 days for automatic expiration.">
                                     <i data-feather="help-circle" class="help-icon"></i>
                                 </span>
                             </label>
                             <input type="number" id="keyExpiry" name="keyExpiry" class="form-input" 
-                                   placeholder="0 for never expires" min="0" max="3650" value="0" required>
+                                   placeholder="0 for never expires" min="0" max="3650" value="0" required aria-describedby="keyExpiryError">
                             <div class="field-help">Enter 0 for no expiry, or up to 3650 days (10 years).</div>
-                            <div class="field-error" id="keyExpiryError"></div>
+                            <div class="field-error" id="keyExpiryError" aria-live="polite"></div>
                         </div>
 
                         <!-- Password Field (Optional) -->
@@ -143,14 +143,14 @@
                             <label for="password" class="form-label">
                                 <i data-feather="lock" class="label-icon"></i>
                                 Password (Optional)
-                                <span class="tooltip-trigger" data-tooltip="If you provide a password, your PGP private key is encrypted with it, and so is the SSH private key if you generate one. Leave blank for unencrypted private keys.">
+                                <span class="tooltip-trigger" tabindex="0" data-tooltip="If you provide a password, your PGP private key is encrypted with it, and so is the SSH private key if you generate one. Leave blank for unencrypted private keys.">
                                     <i data-feather="help-circle" class="help-icon"></i>
                                 </span>
                             </label>
                             <input type="password" id="password" name="password" class="form-input"
-                                   placeholder="Enter a strong password (optional)">
+                                   placeholder="Enter a strong password (optional)" aria-describedby="passwordError">
                             <div class="field-help">Encrypts your PGP private key. Leave blank if not needed.</div>
-                            <div class="field-error" id="passwordError"></div>
+                            <div class="field-error" id="passwordError" aria-live="polite"></div>
                         </div>
 
                         <!-- SSH Key Option -->
@@ -160,7 +160,7 @@
                                 <label for="generateSshKey" class="checkbox-label">
                                     <i data-feather="terminal" class="label-icon"></i>
                                     Also generate SSH key pair
-                                    <span class="tooltip-trigger" data-tooltip="Generate an additional SSH key pair for server access and authentication.">
+                                    <span class="tooltip-trigger" tabindex="0" data-tooltip="Generate an additional SSH key pair for server access and authentication.">
                                         <i data-feather="help-circle" class="help-icon"></i>
                                     </span>
                                 </label>
@@ -189,9 +189,9 @@
                                     Comment (Optional)
                                 </label>
                                 <input type="text" id="sshComment" name="sshComment" class="form-input"
-                                       placeholder="e.g. you@laptop" maxlength="100" autocomplete="off">
+                                       placeholder="e.g. you@laptop" maxlength="100" autocomplete="off" aria-describedby="sshCommentError">
                                 <div class="field-help">Shown at the end of the public key to help you identify it.</div>
-                                <div class="field-error" id="sshCommentError"></div>
+                                <div class="field-error" id="sshCommentError" aria-live="polite"></div>
                             </div>
 
                             <div class="form-group">
@@ -200,27 +200,28 @@
                                     Passphrase (Optional)
                                 </label>
                                 <input type="password" id="sshPassphrase" name="sshPassphrase" class="form-input"
-                                       placeholder="At least 8 characters (optional)" maxlength="256" autocomplete="new-password">
+                                       placeholder="At least 8 characters (optional)" maxlength="256" autocomplete="new-password" aria-describedby="sshPassphraseError">
                                 <div class="field-help">Encrypts the private key. Leave blank for no passphrase.</div>
-                                <div class="field-error" id="sshPassphraseError"></div>
+                                <div class="field-error" id="sshPassphraseError" aria-live="polite"></div>
                             </div>
                         </fieldset>
 
                         <!-- Generate Button -->
-                        <button type="submit" class="btn-generate" id="generateBtn">
+                        <button type="submit" class="btn-generate" id="generateBtn" aria-describedby="generationStatus">
                             <i data-feather="key" class="btn-icon"></i>
                             <span class="btn-text">Generate Keys</span>
-                            <div class="btn-spinner" id="btnSpinner"></div>
+                            <div class="btn-spinner" id="btnSpinner" aria-hidden="true"></div>
                         </button>
+                        <p class="visually-hidden" id="generationStatus" role="status" aria-live="polite"></p>
                     </form>
                 </div>
             </section>
 
             <!-- Results Section -->
-            <section class="results-section" id="resultsSection" style="display: none;">
+            <section class="results-section" id="resultsSection" hidden>
                 <div class="results-card">
                     <h2>Your Keys Are Ready!</h2>
-                    <p class="success-message" id="successMessage"></p>
+                    <p class="success-message" id="successMessage" role="status" aria-live="polite"></p>
 
                     <div class="ssh-summary" id="sshSummary" hidden>
                         <div class="ssh-fingerprint">
@@ -249,7 +250,7 @@
                         </div>
                     </div>
                     
-                    <button class="btn-secondary" onclick="resetForm()">
+                    <button type="button" class="btn-secondary js-reset">
                         <i data-feather="refresh-cw" class="btn-icon"></i>
                         Generate New Keys
                     </button>
@@ -257,14 +258,14 @@
             </section>
 
             <!-- Error Section -->
-            <section class="error-section" id="errorSection" style="display: none;">
+            <section class="error-section" id="errorSection" hidden>
                 <div class="error-card">
                     <div class="error-header">
                         <i data-feather="x-circle" class="error-icon"></i>
                         <h2>Generation Failed</h2>
                     </div>
-                    <p class="error-message" id="errorMessage"></p>
-                    <button class="btn-secondary" onclick="resetForm()">
+                    <p class="error-message" id="errorMessage" role="alert"></p>
+                    <button type="button" class="btn-secondary js-reset">
                         <i data-feather="refresh-cw" class="btn-icon"></i>
                         Try Again
                     </button>
@@ -284,12 +285,12 @@
     </div>
 
     <!-- About Modal -->
-    <div id="aboutModal" class="modal" style="display: none;">
+    <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle" hidden>
         <div class="modal-content">
             <div class="modal-header">
-                <h2>About KeyJolt</h2>
-                <button class="modal-close" id="closeAboutModal">
-                    <i data-feather="x"></i>
+                <h2 id="aboutModalTitle">About KeyJolt</h2>
+                <button type="button" class="modal-close" id="closeAboutModal" aria-label="Close About dialog">
+                    <i data-feather="x" aria-hidden="true"></i>
                 </button>
             </div>
             <div class="modal-body">
@@ -326,11 +327,11 @@
                 </div>
                 <div class="about-section">
                     <h3><i data-feather="user" class="about-icon"></i>Developer Info</h3>
-                    <p>0xWulf, <a href="mailto:dev@0xwulf.dev">dev@0xwulf.dev</a></p>
+                    <p>Erling Wulf Weinreich (0xWulf) · <a href="mailto:dev@0xwulf.dev">dev@0xwulf.dev</a></p>
                 </div>
                 <div class="about-section">
                     <h3><i data-feather="info" class="about-icon"></i>Version</h3>
-                    <p><a th:href="@{https://github.com/hexawulf/KeyJolt/releases/tag/v{v}(v=${appVersion})}" th:text="${'v' + appVersion}" target="_blank" rel="noopener noreferrer">v1.2.1</a></p>
+                    <p><a th:href="@{https://github.com/hexawulf/KeyJolt/releases/tag/v{v}(v=${appVersion})}" th:text="${'v' + appVersion}" target="_blank" rel="noopener noreferrer">v1.3.0</a></p>
                 </div>
                 <div class="about-section">
                     <h3><i data-feather="calendar" class="about-icon"></i>Date</h3>
@@ -341,18 +342,18 @@
     </div>
 
     <!-- Tooltip -->
-    <div class="tooltip" id="tooltip"></div>
+    <div class="tooltip" id="tooltip" role="tooltip"></div>
 
     <!-- Security Modal -->
-    <div id="security-modal" class="modal" style="display: none;">
+    <div id="security-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="securityModalTitle" hidden>
       <div class="modal-content">
-        <span class="close-button">&times;</span>
-        <h2><span class="modal-icon">🔒</span> Security at KeyJolt</h2>
+        <button type="button" class="close-button" aria-label="Close Security dialog">&times;</button>
+        <h2 id="securityModalTitle"><span class="modal-icon" aria-hidden="true">🔒</span> Security at KeyJolt</h2>
         <p>KeyJolt is built with a security-first approach:</p>
         <ul>
           <li><strong>Strong Encryption</strong>: RSA keys up to 4096 bits generated using industry-standard libraries (Bouncy Castle).</li>
           <li><strong>Automatic Cleanup</strong>: Private keys are securely deleted 5 minutes after generation. No long-term storage.</li>
-          <li><strong>Overwritten with Random Data</strong>: Key files are overwritten in memory before deletion for added security.</li>
+          <li><strong>Overwritten with Random Data</strong>: Key files are overwritten with random data on disk before they are deleted.</li>
           <li><strong>Rate Limiting</strong>: A maximum of 10 requests/hour with burst protection using Bucket4j.</li>
           <li><strong>Security Headers</strong>: We enforce HSTS, X-Frame-Options, and a strict Content Security Policy (CSP).</li>
           <li><strong>HTTPS Only</strong>: All communication is encrypted in transit.</li>
@@ -362,10 +363,10 @@
     </div>
 
     <!-- Privacy Modal -->
-    <div id="privacy-modal" class="modal" style="display: none;">
+    <div id="privacy-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="privacyModalTitle" hidden>
       <div class="modal-content">
-        <span class="close-button">&times;</span>
-        <h2><span class="modal-icon">🛡️</span> Privacy at KeyJolt</h2>
+        <button type="button" class="close-button" aria-label="Close Privacy dialog">&times;</button>
+        <h2 id="privacyModalTitle"><span class="modal-icon" aria-hidden="true">🛡️</span> Privacy at KeyJolt</h2>
         <p>Your privacy matters. KeyJolt is designed to be anonymous and private:</p>
         <ul>
           <li><strong>No Account Required</strong>: You can generate keys without signing up or providing any login.</li>
