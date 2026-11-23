@@ -15,7 +15,7 @@
     
     <!-- Meta for Mobile -->
     <meta name="theme-color" content="#0d9488">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <script defer src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.0/dist/feather.min.js"></script>
@@ -106,6 +106,7 @@
                             <div class="field-error" id="emailError" aria-live="polite"></div>
                         </div>
 
+                        <div class="form-row">
                         <!-- Encryption Strength Field -->
                         <div class="form-group">
                             <label for="encryptionStrength" class="form-label">
@@ -135,8 +136,9 @@
                             </label>
                             <input type="number" id="keyExpiry" name="keyExpiry" class="form-input" 
                                    placeholder="0 for never expires" min="0" max="3650" value="0" required aria-describedby="keyExpiryError">
-                            <div class="field-help">Enter 0 for no expiry, or up to 3650 days (10 years).</div>
+                            <div class="field-help">0 for no expiry, or up to 3650 days (10 years).</div>
                             <div class="field-error" id="keyExpiryError" aria-live="polite"></div>
+                        </div>
                         </div>
 
                         <!-- Password Field (Optional) -->
@@ -263,7 +265,7 @@
                 <div class="error-card">
                     <div class="error-header">
                         <i data-feather="x-circle" class="error-icon"></i>
-                        <h2>Generation Failed</h2>
+                        <h2 id="errorHeading">Generation Failed</h2>
                     </div>
                     <p class="error-message" id="errorMessage" role="alert"></p>
                     <button type="button" class="btn-secondary js-reset">
@@ -295,44 +297,19 @@
                 </button>
             </div>
             <div class="modal-body">
-                <div class="about-section">
-                    <h3><i data-feather="layers" class="about-icon"></i>Tech Stack</h3>
-                    <h4>Backend:</h4>
-                    <ul>
-                        <li><strong>Framework:</strong> Spring Boot <span th:text="${springBootVersion}">4.1.2</span></li>
-                        <li><strong>Language:</strong> Java <span th:text="${javaVersion}">17</span></li>
-                        <li><strong>Security:</strong> Spring Security with custom headers</li>
-                        <li><strong>Cryptography:</strong> Bouncy Castle (PGP), Apache MINA sshd (SSH)</li>
-                        <li><strong>Rate Limiting:</strong> Bucket4j</li>
-                        <li><strong>Build Tool:</strong> Maven</li>
-                    </ul>
-                    <h4>Frontend:</h4>
-                    <ul>
-                        <li><strong>Template Engine:</strong> Thymeleaf</li>
-                        <li><strong>Styling:</strong> Custom CSS with CSS Grid and Flexbox</li>
-                        <li><strong>JavaScript:</strong> Vanilla JS with modern ES6+ features</li>
-                        <li><strong>Icons:</strong> Feather Icons</li>
-                        <li><strong>Responsive:</strong> Mobile-first design patterns</li>
-                    </ul>
-                    <h4>Security & Performance:</h4>
-                    <ul>
-                        <li><strong>HTTPS Ready:</strong> Security headers for production deployment</li>
-                        <li><strong>CSP:</strong> Content Security Policy for XSS protection</li>
-                        <li><strong>Rate Limiting:</strong> Token bucket algorithm</li>
-                        <li><strong>Memory Management:</strong> Automatic resource cleanup</li>
-                    </ul>
+                <div class="about-section about-meta-grid">
+                    <div>
+                        <h3><i data-feather="info" class="about-icon"></i>Version</h3>
+                        <p><a th:href="@{https://github.com/hexawulf/KeyJolt/releases/tag/v{v}(v=${appVersion})}" th:text="${'v' + appVersion}" target="_blank" rel="noopener noreferrer">v1.3.0</a> · November 2026</p>
+                    </div>
+                    <div>
+                        <h3><i data-feather="github" class="about-icon"></i>GitHub</h3>
+                        <p><a href="https://github.com/hexawulf/KeyJolt" target="_blank" rel="noopener noreferrer">hexawulf/KeyJolt</a></p>
+                    </div>
                 </div>
                 <div class="about-section">
-                    <h3><i data-feather="github" class="about-icon"></i>GitHub</h3>
-                    <p><a href="https://github.com/hexawulf/KeyJolt" target="_blank" rel="noopener noreferrer">View on GitHub</a></p>
-                </div>
-                <div class="about-section">
-                    <h3><i data-feather="user" class="about-icon"></i>Developer Info</h3>
+                    <h3><i data-feather="user" class="about-icon"></i>Developer</h3>
                     <p>Erling Wulf Weinreich (0xWulf) · <a href="mailto:dev@0xwulf.dev">dev@0xwulf.dev</a></p>
-                </div>
-                <div class="about-section">
-                    <h3><i data-feather="info" class="about-icon"></i>Version</h3>
-                    <p><a th:href="@{https://github.com/hexawulf/KeyJolt/releases/tag/v{v}(v=${appVersion})}" th:text="${'v' + appVersion}" target="_blank" rel="noopener noreferrer">v1.3.0</a></p>
                 </div>
                 <div class="about-section">
                     <h3><i data-feather="zap" class="about-icon"></i>What's New in <span th:text="${'v' + appVersion}">v1.3.0</span></h3>
@@ -344,8 +321,13 @@
                     </ul>
                 </div>
                 <div class="about-section">
-                    <h3><i data-feather="calendar" class="about-icon"></i>Date</h3>
-                    <p>November 2026</p>
+                    <h3><i data-feather="layers" class="about-icon"></i>Tech Stack</h3>
+                    <ul>
+                        <li><strong>Backend:</strong> Spring Boot <span th:text="${springBootVersion}">4.1.2</span>, Java <span th:text="${javaVersion}">17</span>, Spring Security, Bucket4j, Maven</li>
+                        <li><strong>Cryptography:</strong> Bouncy Castle (PGP), Apache MINA sshd (OpenSSH Ed25519 / RSA)</li>
+                        <li><strong>Frontend:</strong> Thymeleaf, Vanilla ES6+ JS, Custom CSS, Feather Icons</li>
+                        <li><strong>Security:</strong> Stateless sessions, strict CSP, HSTS, per-request 0700 temp dirs with 5-minute &amp; shutdown wipe</li>
+                    </ul>
                 </div>
             </div>
         </div>

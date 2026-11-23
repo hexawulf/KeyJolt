@@ -7,6 +7,7 @@ class KeyJoltApp {
         this.errorSection = document.getElementById('errorSection');
         this.downloadGrid = document.getElementById('downloadGrid');
         this.successMessage = document.getElementById('successMessage');
+        this.errorHeading = document.getElementById('errorHeading');
         this.errorMessage = document.getElementById('errorMessage');
 
         // Mode (PGP + SSH vs SSH only)
@@ -561,7 +562,12 @@ class KeyJoltApp {
         this.resultsSection.scrollIntoView({ behavior: 'smooth' });
     }
     
-    showError(errorText) {
+    showError(errorText, heading = 'Generation Failed') {
+        this.resultsSection.hidden = true;
+        this.resultsSection.classList.remove('fade-in');
+        if (this.errorHeading) {
+            this.errorHeading.textContent = heading;
+        }
         this.errorMessage.textContent = errorText;
         this.announce('');
         this.errorSection.hidden = false;
@@ -670,11 +676,11 @@ class KeyJoltApp {
                 // Key files are deleted 5 minutes after generation, so a 404
                 // here almost always means the link has expired (KJ-09).
                 if (response.status === 404 || response.status === 410) {
-                    this.showError('This download link has expired: keys are deleted 5 minutes after generation. Please generate a new key.');
+                    this.showError('This download link has expired: keys are deleted 5 minutes after generation. Please generate a new key.', 'Download Failed');
                 } else if (response.status === 400) {
-                    this.showError('This download link is not valid. Please generate a new key.');
+                    this.showError('This download link is not valid. Please generate a new key.', 'Download Failed');
                 } else {
-                    this.showError(`Download failed (HTTP ${response.status}). Please try again.`);
+                    this.showError(`Download failed (HTTP ${response.status}). Please try again.`, 'Download Failed');
                 }
                 return;
             }
@@ -691,7 +697,7 @@ class KeyJoltApp {
         } catch (error) {
             this.showError(error.name === 'AbortError'
                 ? 'The download took too long. Please try again.'
-                : 'Download failed. Please check your connection and try again.');
+                : 'Download failed. Please check your connection and try again.', 'Download Failed');
         }
     }
 
