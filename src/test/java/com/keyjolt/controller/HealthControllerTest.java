@@ -69,7 +69,9 @@ class HealthControllerTest {
             .andExpect(header().string("Content-Security-Policy", containsString("default-src 'self'")))
             .andExpect(header().string("Content-Security-Policy", containsString("object-src 'none'")))
             .andExpect(header().string("Content-Security-Policy",
-                    containsString("script-src 'self' https://cdn.jsdelivr.net")))
+                    containsString("script-src 'self';")))
+            .andExpect(header().string("Content-Security-Policy",
+                    org.hamcrest.Matchers.not(containsString("cdn.jsdelivr.net"))))
             .andExpect(header().string("X-Content-Type-Options", "nosniff"))
             .andExpect(header().string("X-Frame-Options", "DENY"))
             .andExpect(header().string("Referrer-Policy", "no-referrer"))
