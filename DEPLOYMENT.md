@@ -1,96 +1,76 @@
 # Deployment Guide
 
-This guide covers deploying KeyJolt to various platforms and production environments.
+This guide covers building and self-hosting KeyJolt behind a TLS-terminating reverse proxy.
 
 ## Prerequisites
 
-- Java 17 or higher
-- Maven 3.6+
-- SSL certificate for production (HTTPS required)
+- Java 17 (OpenJDK / Eclipse Temurin)
+- Maven 3.9+ (3.6+ minimum)
+- A reverse proxy with TLS (Nginx, Caddy, or Apache) for production HTTPS
 
-## Environment Variables
-
-Set these environment variables for production:
+## Build
 
 ```bash
-# Server Configuration
-SERVER_PORT=5005
-SERVER_ADDRESS=0.0.0.0
-
-# Rate Limiting
-APP_RATE_LIMIT_REQUESTS_PER_HOUR=10
-APP_RATE_LIMIT_BURST_CAPACITY=5
-
-# File Cleanup (5 minutes = 300000ms)
-APP_KEY_CLEANUP_DELAY=300000
-
-# Security
-SPRING_PROFILES_ACTIVE=production
-```
-
-## Production Build
-
-```bash
-# Clone and build
 git clone https://github.com/hexawulf/KeyJolt.git
 cd KeyJolt
-mvn clean package -Dmaven.test.skip=true
-
-# The JAR file will be in target/keyjolt-1.3.0.jar
+mvn -B verify
+# Produces target/keyjolt-1.3.0.jar after running tests, JaCoCo >= 80%, and SpotBugs
 ```
 
-## Platform-Specific Deployments
+## Configuration
 
-### Docker Deployment
+KeyJolt reads defaults from `src/main/resources/application.properties` and supports environment variables or Spring Boot CLI flags:
 
-Create `Dockerfile`:
-```dockerfile
-FROM openjdk:17-jre-slim
+| Setting | Env var / CLI flag | Default | Notes |
+|---|---|---|---|
+| Listen port | `PORT` or `--server.port` | `5005` | |
+| Bind address | `SERVER_ADDRESS` or `--server.address` | `127.0.0.1` | Loopback by default; override only if proxied from another host |
+| Trusted proxy | `--app.trusted-proxy=true` | `false` | Set `true` only behind a reverse proxy that overwrites `X-Real-IP` |
+| Temp key dir | `--app.temp-dir=/path` | `${java.io.tmpdir}/keyjolt` | Created `0700`; purged on startup and clean `SIGTERM` shutdown |
+| Key TTL (ms) | `--app.key-cleanup-delay` | `300000` | 5 minutes |
+| Rate limit | `APP_RATE_LIMIT_REQUESTS_PER_HOUR`, `APP_RATE_LIMIT_BURST_CAPACITY` | `10` / `5` | Per-client IP via Bucket4j |
+| Concurrency cap | `--app.generation.max-concurrent` | `2` | Extra heavy RSA requests wait 5 s then receive `503` + `Retry-After` |
+| Log directory | `LOG_DIR` | `logs` | Rolling log written to `${LOG_DIR}/keyjolt.log` |
 
-WORKDIR /app
-COPY target/keyjolt-1.3.0.jar app.jar
+## Self-Hosting (Direct JAR + Process Manager)
 
-EXPOSE 5005
+Run the JAR as an unprivileged user (never `root`). Give the JVM at least 15 seconds on `SIGTERM` so the `@PreDestroy` shutdown hook can securely overwrite and delete any pending key files before exit.
 
-CMD ["java", "-jar", "app.jar"]
-```
-
-Build and run:
 ```bash
-docker build -t keyjolt .
-docker run -p 5005:5005 \
-  -e SPRING_PROFILES_ACTIVE=production \
-  keyjolt
+LOG_DIR=/var/log/keyjolt \
+java -Xms256m -Xmx512m -XX:+UseG1GC \
+  -jar target/keyjolt-1.3.0.jar \
+  --app.trusted-proxy=true
 ```
 
-### Cloud Platforms
+### systemd Example
 
-#### Heroku
-1. Create `Procfile`:
-   ```
-   web: java -jar target/keyjolt-1.3.0.jar
-   ```
+```ini
+[Unit]
+Description=KeyJolt PGP & SSH Key Generator
+After=network.target
 
-2. Deploy:
-   ```bash
-   heroku create your-app-name
-   git push heroku main
-   ```
+[Service]
+Type=simple
+User=keyjolt
+WorkingDirectory=/opt/keyjolt
+Environment=LOG_DIR=/var/log/keyjolt
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -jar /opt/keyjolt/target/keyjolt-1.3.0.jar --app.trusted-proxy=true
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
 
-#### AWS EC2
-```bash
-# Install Java and transfer JAR
-sudo yum update -y
-sudo yum install -y java-17-amazon-corretto
-
-# Run as service
-sudo java -jar keyjolt-1.3.0.jar
+[Install]
+WantedBy=multi-user.target
 ```
 
-#### Digital Ocean
-Use their App Platform with automatic deployment from GitHub.
+### pm2 Example
+
+See [`ecosystem.config.cjs`](ecosystem.config.cjs) for a production pm2 configuration with `kill_timeout: 15000` and `--app.trusted-proxy=true`. Note that pm2 only reloads `kill_timeout` on `pm2 delete` + `pm2 start`, not `pm2 restart`.
 
 ## Reverse Proxy Setup
+
+KeyJolt sends its own security headers (`Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`). Do not duplicate those headers in your proxy vhost.
 
 ### Nginx Configuration
 
@@ -104,16 +84,17 @@ server {
 server {
     listen 443 ssl http2;
     server_name yourdomain.com;
-    
+
     ssl_certificate /path/to/certificate.crt;
     ssl_certificate_key /path/to/private.key;
-    
+
     location / {
-        proxy_pass http://localhost:5005;
+        proxy_pass http://127.0.0.1:5005;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 75s;
     }
 }
 ```
@@ -123,98 +104,49 @@ server {
 ```apache
 <VirtualHost *:443>
     ServerName yourdomain.com
-    
+
     SSLEngine on
     SSLCertificateFile /path/to/certificate.crt
     SSLCertificateKeyFile /path/to/private.key
-    
+
     ProxyPreserveHost On
-    ProxyPass / http://localhost:5005/
-    ProxyPassReverse / http://localhost:5005/
+    ProxyPass / http://127.0.0.1:5005/
+    ProxyPassReverse / http://127.0.0.1:5005/
 </VirtualHost>
 ```
 
 ## Monitoring and Logging
 
-### Application Logs
-```bash
-# View logs
-tail -f /var/log/keyjolt/application.log
+### Health Check
 
-# Log rotation setup
-sudo logrotate -d /etc/logrotate.d/keyjolt
+KeyJolt exposes a lightweight, uncached health endpoint:
+
+```bash
+curl -s http://127.0.0.1:5005/healthz
+# {"status":"ok","service":"keyjolt"}
 ```
 
-### Health Checks
-KeyJolt does not ship Spring Boot Actuator by default.
-Add `spring-boot-starter-actuator` to `pom.xml` if you need
-`/actuator/health` or `/actuator/metrics` endpoints.
+### Application Logs
+
+Logs roll automatically (5 MB max file size, 7-day history via `logback-spring.xml`) in `${LOG_DIR}/keyjolt.log`. Download paths are redacted to `/download/<redacted>`, and tokens, emails, filenames, and key material are never logged.
+
+```bash
+tail -f "${LOG_DIR:-logs}/keyjolt.log"
+```
 
 ## Security Checklist
 
-- [ ] HTTPS enabled with valid SSL certificate
-- [ ] Firewall configured (only allow 80, 443, SSH)
-- [ ] Regular security updates scheduled
-- [ ] Monitoring and alerting configured
-- [ ] Backup procedures implemented
-- [ ] Rate limiting configured appropriately
-- [ ] Security headers verified
-
-## Performance Optimization
-
-### JVM Tuning
-```bash
-java -Xms512m -Xmx1024m \
-     -XX:+UseG1GC \
-     -jar keyjolt-1.3.0.jar
-```
-
-### Database (if added)
-Consider adding database connection pooling and caching for enhanced performance.
+- [ ] HTTPS enabled with valid TLS certificate
+- [ ] Application bound to `127.0.0.1` (default) behind reverse proxy
+- [ ] `--app.trusted-proxy=true` enabled only when the proxy overwrites `X-Real-IP`
+- [ ] Process runs as a non-root user with >= 15 s graceful stop timeout
+- [ ] Firewall allows only 80, 443, and SSH
+- [ ] Security headers verified (each header sent once)
 
 ## Troubleshooting
 
-### Common Issues
-
-1. **Port Already in Use**
-   ```bash
-   sudo lsof -i :5005
-   sudo kill -9 PID
-   ```
-
-2. **SSL Certificate Issues**
-   ```bash
-   openssl x509 -in certificate.crt -text -noout
-   ```
-
-3. **Memory Issues**
-   ```bash
-   free -h
-   ps aux --sort=-%mem | head
-   ```
-
-### Log Analysis
-```bash
-# Error patterns
-grep -i error /var/log/keyjolt/application.log
-
-# Rate limiting hits
-grep "Rate limit exceeded" /var/log/keyjolt/application.log
-```
-
-## Maintenance
-
-### Regular Tasks
-- Monitor disk space (key cleanup verification)
-- Check SSL certificate expiration
-- Review security logs
-- Update dependencies monthly
-- Performance monitoring
-
-### Backup Strategy
-- Configuration files
-- SSL certificates
-- Application logs
-- Monitoring data
+1. **Port already in use:** check with `ss -ltnp | grep ':5005 '` and stop the existing process gracefully with `kill -TERM <pid>`.
+2. **Slow RSA-4096 generation / 503 busy:** `app.generation.max-concurrent` defaults to `2` to prevent CPU exhaustion; tune it to match available CPU cores.
+3. **Rate limiting hits:** check `grep "429" "${LOG_DIR:-logs}/keyjolt.log"`.
 
 For support: dev@0xwulf.dev

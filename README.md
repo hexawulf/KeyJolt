@@ -35,7 +35,7 @@
 - **Clearer errors** for a busy server (`503`, with the `Retry-After` wait), rate limits (`429`)
   and invalid download links.
 - **About** shows `Erling Wulf Weinreich (0xWulf) · dev@0xwulf.dev`; the version comes from the build.
-- **Tests and CI:** 100 JUnit tests (new `PgpKeyServiceTest`, `HealthControllerTest`), a JaCoCo
+- **Tests and CI:** 101 JUnit tests (new `PgpKeyServiceTest`, `HealthControllerTest`), a JaCoCo
   gate of 80 % line coverage, a Playwright browser smoke suite in [`e2e/`](e2e/), a Trivy scan of
   every library in the built JAR, and SHA-pinned GitHub Actions on Node 24.
 
@@ -113,29 +113,29 @@ Older releases: see [CHANGELOG.md](CHANGELOG.md).
    cd KeyJolt
    ```
 
-2. **Build the application**
+2. **Build and verify the application**
    ```bash
-   mvn clean install
+   mvn -B verify
    ```
 
 3. **Run the server**
    ```bash
-   mvn spring-boot:run
+   java -jar target/keyjolt-1.3.0.jar
    ```
 
 4. **Access the application**
    ```
-   http://localhost:5005
+   http://127.0.0.1:5005
    ```
 
 ### Configuration
 
-The application can be configured via `application.properties`:
+Defaults live in `src/main/resources/application.properties` and can be overridden via environment variables or Spring Boot CLI flags:
 
 ```properties
-# Server Configuration (uses PORT env var if set, else 5005)
+# Server Configuration (loopback by default; override with PORT / SERVER_ADDRESS or CLI flags)
 server.port=${PORT:5005}
-server.address=0.0.0.0
+server.address=${SERVER_ADDRESS:127.0.0.1}
 
 # Rate Limiting
 app.rate-limit.requests-per-hour=10
@@ -153,9 +153,7 @@ app.encryption.default-strength=4096
 app.encryption.max-expiry-days=3650
 ```
 
-Copy `src/main/resources/application-example.properties` to
-`src/main/resources/application.properties` and adjust values for
-your environment. **Do not** commit secrets to version control.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for reverse-proxy and process-manager examples. **Do not** commit secrets to version control.
 
 ---
 
@@ -274,12 +272,10 @@ keyjolt/
 ## 🔒 Security Considerations
 
 ### **Production Deployment**
-- Use HTTPS in production environments
-- Configure proper firewall rules
-- Set up monitoring and alerting
-- Regular security updates
-- Restrict access to `/actuator` endpoints or disable them
-- Set `SPRING_PROFILES_ACTIVE=production` for production builds
+- Use HTTPS via a reverse proxy in front of loopback (`127.0.0.1:5005`)
+- Pass `--app.trusted-proxy=true` only when the proxy overwrites `X-Real-IP`
+- Configure proper firewall rules and graceful shutdown (`>= 15 s` stop timeout)
+- Set up monitoring against `/healthz` and keep dependencies updated
 
 ### **Key Safety**
 - Private keys are generated server-side and deleted 5 minutes after generation (and on every restart)
