@@ -15,8 +15,8 @@ test.describe('README screenshots', () => {
     const page = await context.newPage();
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    await page.locator('#name').fill('Jane Doe');
-    await page.locator('#email').fill('jane@example.com');
+    await page.locator('#name').fill('Test User');
+    await page.locator('#email').fill('test@example.com');
     await page.locator('#name').blur();
     await page.screenshot({ path: `${out}/keyjolt-home.png`, fullPage: false });
     await context.close();
@@ -27,7 +27,7 @@ test.describe('README screenshots', () => {
     const page = await context.newPage();
     await page.goto('/#ssh');
     await page.waitForLoadState('networkidle');
-    await page.locator('#sshComment').fill('you@laptop');
+    await page.locator('#sshComment').fill('test@example.com');
     await page.locator('#generateBtn').click();
     const results = page.locator('#resultsSection');
     await expect(results).toBeVisible();
