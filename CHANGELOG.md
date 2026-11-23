@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-11-23
+
+Security hardening, WCAG AA teal visual refresh, layout polish and repository cleanup.
+Includes two post-1.3.0 commits (`24eb3d1`, `638ce55`) that were previously built into
+production under the `1.3.0` JAR filename.
+
+### Security
+- **Loopback bind by default:** `server.address` now defaults to `${SERVER_ADDRESS:127.0.0.1}`
+  instead of `0.0.0.0` (overridable via `SERVER_ADDRESS` or `--server.address`), backed by a
+  unit test (`HealthControllerTest.defaultBindAddressIsLoopback`).
+- **Zero third-party requests:** vendored `feather-icons@4.29.0` (`dist/feather.min.js`) into
+  `src/main/resources/static/js/feather.min.js` (content-hashed via Thymeleaf) and tightened
+  `SecurityConfig` CSP `script-src` from `'self' https://cdn.jsdelivr.net` to `'self'`.
+
+### Fixed
+- **Expired download error display:** clicking an expired download link now hides the stale
+  results card (preventing dead download buttons from remaining stacked above the error card)
+  and displays a *Download Failed* heading instead of *Generation Failed*.
+- **WCAG 2.1 AA contrast:** darkened interactive teal button fills, active mode tab, links,
+  and headings to `#0F766E` / `#115E59` (≥ 5.23:1) and tagline to `#475569` (7.24:1) so every
+  interactive element meets WCAG 2.1 AA (4.5:1) while preserving the canonical teal accent.
+
+### Changed
+- **Visual refresh & favicons (`638ce55`, `24eb3d1`):** refreshed to the 0xWulf teal palette
+  with KJ SVG/PNG/ICO favicons, added release notes to the About modal, and tightened layout
+  density (2-column strength/expiry row on desktop, form-first order on mobile, single-screen
+  About modal) so the primary CTA fits above the fold.
+- **Docs & screenshots:** rewrote stale `DEPLOYMENT.md` for accurate self-hosting, aligned
+  `README.md` and `robots.txt`, and refreshed `docs/screenshots/*.png` with the AA teal UI.
+
+### Removed
+- Deleted dead legacy files: `.replit`, `render.yaml`, `replit.md`,
+  `src/main/resources/application-example.properties`, unused `src/main/resources/static/Keyjolt.png`
+  (981 KB), dead `--twitter-blue*` CSS aliases, and duplicate Replit lines in `.gitignore`.
+
 ## [1.3.0] - 2026-11-22
 
 Tier-S parity pass: tests, coverage gate, browser smoke tests, CI supply-chain
@@ -169,7 +204,8 @@ hardening and an accessibility pass. No API or key-format changes.
 - Removed unused files, dependencies and frontend debug code; added
   `application-example.properties`.
 
-[Unreleased]: https://github.com/hexawulf/KeyJolt/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/hexawulf/KeyJolt/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/hexawulf/KeyJolt/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/hexawulf/KeyJolt/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/hexawulf/KeyJolt/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/hexawulf/KeyJolt/compare/v1.1.5...v1.2.0

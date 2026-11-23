@@ -14,7 +14,7 @@ This guide covers building and self-hosting KeyJolt behind a TLS-terminating rev
 git clone https://github.com/hexawulf/KeyJolt.git
 cd KeyJolt
 mvn -B verify
-# Produces target/keyjolt-1.3.0.jar after running tests, JaCoCo >= 80%, and SpotBugs
+# Produces target/keyjolt-1.3.1.jar after running tests, JaCoCo >= 80%, and SpotBugs
 ```
 
 ## Configuration
@@ -39,7 +39,7 @@ Run the JAR as an unprivileged user (never `root`). Give the JVM at least 15 sec
 ```bash
 LOG_DIR=/var/log/keyjolt \
 java -Xms256m -Xmx512m -XX:+UseG1GC \
-  -jar target/keyjolt-1.3.0.jar \
+  -jar target/keyjolt-1.3.1.jar \
   --app.trusted-proxy=true
 ```
 
@@ -55,7 +55,7 @@ Type=simple
 User=keyjolt
 WorkingDirectory=/opt/keyjolt
 Environment=LOG_DIR=/var/log/keyjolt
-ExecStart=/usr/bin/java -Xms256m -Xmx512m -jar /opt/keyjolt/target/keyjolt-1.3.0.jar --app.trusted-proxy=true
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -jar /opt/keyjolt/target/keyjolt-1.3.1.jar --app.trusted-proxy=true
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=15

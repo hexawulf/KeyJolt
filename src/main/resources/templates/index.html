@@ -300,7 +300,7 @@
                 <div class="about-section about-meta-grid">
                     <div>
                         <h3><i data-feather="info" class="about-icon"></i>Version</h3>
-                        <p><a th:href="@{https://github.com/hexawulf/KeyJolt/releases/tag/v{v}(v=${appVersion})}" th:text="${'v' + appVersion}" target="_blank" rel="noopener noreferrer">v1.3.0</a> · November 2026</p>
+                        <p><a th:href="@{https://github.com/hexawulf/KeyJolt/releases/tag/v{v}(v=${appVersion})}" th:text="${'v' + appVersion}" target="_blank" rel="noopener noreferrer">v1.3.1</a> · November 2026</p>
                     </div>
                     <div>
                         <h3><i data-feather="github" class="about-icon"></i>GitHub</h3>
@@ -312,12 +312,12 @@
                     <p>Erling Wulf Weinreich (0xWulf) · <a href="mailto:dev@0xwulf.dev">dev@0xwulf.dev</a></p>
                 </div>
                 <div class="about-section">
-                    <h3><i data-feather="zap" class="about-icon"></i>What's New in <span th:text="${'v' + appVersion}">v1.3.0</span></h3>
+                    <h3><i data-feather="zap" class="about-icon"></i>What's New in <span th:text="${'v' + appVersion}">v1.3.1</span></h3>
                     <ul>
-                        <li>Fixed &ldquo;Generate New Keys&rdquo; and &ldquo;Try Again&rdquo; reset buttons under strict CSP (zero inline handlers)</li>
-                        <li>Accessible dialogs with keyboard focus management, Escape/backdrop close, and screen-reader announcements</li>
-                        <li>Clearer error messages for rate-limit (429), busy (503), and expired download links</li>
-                        <li>Expanded cryptographic &amp; browser verification (101 JUnit tests, JaCoCo coverage gate, Playwright E2E, Trivy JAR scan)</li>
+                        <li>Default loopback bind (<code>127.0.0.1</code>, overridable via <code>SERVER_ADDRESS</code>)</li>
+                        <li>Vendored Feather Icons locally and tightened CSP <code>script-src</code> to <code>'self'</code> (zero third-party requests)</li>
+                        <li>0xWulf teal palette &amp; KJ favicons tuned for WCAG 2.1 AA contrast, with CTA above the fold</li>
+                        <li>Expired download errors now hide stale download cards and show a clear Download Failed state</li>
                     </ul>
                 </div>
                 <div class="about-section">

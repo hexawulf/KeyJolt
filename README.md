@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=java" alt="Java">
   <img src="https://img.shields.io/badge/Security-PGP%20%26%20SSH-blue?style=for-the-badge&logo=gnuprivacyguard" alt="Security">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
-  <img src="https://img.shields.io/badge/Version-1.3.0-blue?style=for-the-badge" alt="Version 1.3.0">
+  <img src="https://img.shields.io/badge/Version-1.3.1-blue?style=for-the-badge" alt="Version 1.3.1">
 </div>
 
 <div align="center">
@@ -25,19 +25,19 @@
   <img src="docs/screenshots/keyjolt-ssh-result.png" alt="SSH-only result: fingerprint, public key with Copy button and download cards" width="860">
 </p>
 
-## 🆕 What's New in v1.3.0
+## 🆕 What's New in v1.3.1
 
-- **Fixed: "Generate New Keys" and "Try Again" did nothing.** They were inline `onclick`
-  handlers that the app's own Content Security Policy blocks; they are now bound from the script.
-- **Accessible dialogs.** About, Security and Privacy are real dialogs (`role="dialog"`,
-  `aria-modal`); focus moves in, stays in on Tab, and returns on Escape, backdrop click or close.
-  Progress and errors are announced to screen readers; tooltips open on keyboard focus.
-- **Clearer errors** for a busy server (`503`, with the `Retry-After` wait), rate limits (`429`)
-  and invalid download links.
-- **About** shows `Erling Wulf Weinreich (0xWulf) · dev@0xwulf.dev`; the version comes from the build.
-- **Tests and CI:** 101 JUnit tests (new `PgpKeyServiceTest`, `HealthControllerTest`), a JaCoCo
-  gate of 80 % line coverage, a Playwright browser smoke suite in [`e2e/`](e2e/), a Trivy scan of
-  every library in the built JAR, and SHA-pinned GitHub Actions on Node 24.
+- **Loopback bind by default:** `server.address` now defaults to `127.0.0.1` (overridable via
+  `SERVER_ADDRESS` or `--server.address`), avoiding unintended wildcard network exposure behind
+  a reverse proxy.
+- **Zero third-party requests:** Feather Icons `4.29.0` is vendored locally (`/js/feather.min.js`)
+  and the CSP `script-src` is tightened to `'self'` only.
+- **0xWulf teal UI & WCAG AA contrast:** Refreshed teal palette and KJ favicons with all buttons,
+  tabs, links, and headings verified at WCAG 2.1 AA (≥ 4.5:1); primary CTA fits above the fold on
+  desktop and mobile; streamlined About modal with release notes.
+- **Bug fix & cleanup:** Expired downloads now hide stale download cards and show a clear
+  *Download Failed* heading; removed dead Replit/Render configs, stale example properties, and an
+  unused 981 KB legacy PNG (~954 KB smaller JAR).
 
 Older releases: see [CHANGELOG.md](CHANGELOG.md).
 
@@ -120,7 +120,7 @@ Older releases: see [CHANGELOG.md](CHANGELOG.md).
 
 3. **Run the server**
    ```bash
-   java -jar target/keyjolt-1.3.0.jar
+   java -jar target/keyjolt-1.3.1.jar
    ```
 
 4. **Access the application**
