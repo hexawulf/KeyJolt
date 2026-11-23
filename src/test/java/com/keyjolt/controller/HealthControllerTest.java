@@ -34,6 +34,14 @@ class HealthControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @org.springframework.beans.factory.annotation.Value("${server.address}")
+    private String serverAddress;
+
+    @Test
+    void defaultBindAddressIsLoopback() {
+        org.junit.jupiter.api.Assertions.assertEquals("127.0.0.1", serverAddress);
+    }
+
     @Test
     void healthzIsPublicJsonAndUncached() throws Exception {
         mockMvc.perform(get("/healthz"))
