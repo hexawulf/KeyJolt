@@ -118,9 +118,39 @@ class HealthControllerTest {
         assertFalse(html.matches("(?s).*\\son[a-z]+\\s*=\\s*\".*"), "inline event handler found in index.html");
     }
 
+    @Test
+    void sitemapXmlIsPublic() throws Exception {
+        mockMvc.perform(get("/sitemap.xml"))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_XML))
+            .andExpect(content().string(containsString("http://www.sitemaps.org/schemas/sitemap/0.9")))
+            .andExpect(content().string(containsString("<loc>https://keyjolt.dev/</loc>")))
+            .andExpect(content().string(org.hamcrest.Matchers.not(containsString("https://www.keyjolt.dev"))));
+    }
+
+    @Test
+    void robotsTxtAdvertisesSitemap() throws Exception {
+        mockMvc.perform(get("/robots.txt"))
+            .andExpect(status().isOk())
+            .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_PLAIN))
+            .andExpect(content().string(containsString("Sitemap: https://keyjolt.dev/sitemap.xml")))
+            .andExpect(content().string(containsString("Disallow: /api/")))
+            .andExpect(content().string(containsString("Disallow: /download/")));
+    }
+
+    @Test
+    void homepageHasCanonicalAndDescription() throws Exception {
+        String html = mockMvc.perform(get("/"))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString();
+        assertTrue(html.contains("<link rel=\"canonical\" href=\"https://keyjolt.dev/\">"), html);
+        assertTrue(html.contains("<meta name=\"description\" content=\"Create cryptographically secure PGP and SSH key pairs instantly. Private keys are generated on the server and automatically deleted after 5 minutes.\">"), html);
+        assertFalse(html.contains("https://www.keyjolt.dev"), html);
+    }
+
     @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"/does-not-exist", "/api/unknown", "/actuator/env", "/wp-admin/install.php",
-            "/wp-login.php", "/.env", "/.git/config"})
+            "/wp-login.php", "/.env", "/.git/config", "/generate", "/admin/", "/admin/keys"})
     void unknownAndProbedRoutesAreDeniedWithoutDetails(String path) throws Exception {
         MvcResult result = mockMvc.perform(get(path))
             .andExpect(status().isForbidden())

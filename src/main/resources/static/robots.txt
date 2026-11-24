@@ -10,3 +10,6 @@ Allow: /apple-touch-icon.png
 Allow: /android-chrome-192x192.png
 Allow: /android-chrome-512x512.png
 Allow: /site.webmanifest
+Allow: /sitemap.xml
+
+Sitemap: https://keyjolt.dev/sitemap.xml
